@@ -1,0 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Cardo:ital,wght@0,400;0,700;1,400&display=swap');
+
+.home {
+    font-family: Abril Fatface;
+    text-align: center;
+    height: 60vh;
+    border: 2px solid black;
+    margin-top: 5vh;
+    display: block;
+}
+
+
+.intro h1 {
+    font-size: 10vw;
+    margin: auto;
+    line-height: 60vh;
+    vertical-align:middle;
+}
+
+.scroll {
+    height: 40vh;
+    font-family: Cardo;
+    border: 2px solid black;
+}

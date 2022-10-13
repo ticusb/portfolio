@@ -1,8 +1,9 @@
 import React from "react";
+import './styles/NavBar.css'
 
-export default function About() {
+export default function NavBar() {
     return (
-        <div class="navbar">
+        <div class="sticky">
             <nav>
                 <ul>
                     <li>Home</li>

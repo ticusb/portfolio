@@ -1,25 +1,4 @@
-.home {
-  height: 100vh;
-  text-align: center;
-}
 
-.home h1 {
-  text-align: center;
-  height: 30vh;
-  padding: auto 0;
-  border: 1px solid black;
-}
 
-.navbar ul {
-  text-align: center;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  width: auto;
-}
-.navbar li{
-  display: inline-block;
-  padding: auto;
-  border-bottom: 1px solid #bbb;
-  margin: 0 4vw;
-}
+
+
