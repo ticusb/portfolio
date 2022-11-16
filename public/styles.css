@@ -1,3 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Cardo:ital,wght@0,400;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap');
+
+html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+}
+
+body {
+    margin: 0;
+}
+
+/* App */
+
+.container {
+    display: block;
+    color: #2e2e2e;
+    border: 2px solid black;
+    width: 100%;
+    height: 100%;
+}
+
+section:nth-child(2) {
+    margin-top: 5vh;
+}
+
 /* NavBar */
 
 li {
@@ -6,9 +33,13 @@ li {
     margin: auto 5vw;
 }
 
+li a {
+    color:#2e2e2e;
+    text-decoration: none
+}
+
 li:hover {
-    display: inline-block;
-    border-bottom: 1px solid #bbb;
+    border-bottom: 2px solid #bbb;
     margin: auto 5vw;
     cursor: pointer;
 }
@@ -36,16 +67,7 @@ li:hover {
 
 }
 
-nav {
-    text-align: center;
-}
-
-
-
 /* Home */
-
-@import url('https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Cardo:ital,wght@0,400;0,700;1,400&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
 .center {
     display: flex;
@@ -61,7 +83,7 @@ nav {
 
 .sec-intro h1 {
     font-size: 10vw;
-    text-shadow: 2px 2px 2px grey;
+    text-shadow: 2px 2px 2px #999999;
     border: 2px solid black;
     
 }
@@ -99,7 +121,6 @@ nav {
 }
 
 /* Explore */
-@import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap');
 
 .center {
     display: flex;
@@ -131,20 +152,5 @@ nav {
     margin: auto;
 }
 
-/* App */
 
-.container {
-    display: block;
-    border: 2px solid black;
-    height: 95vh;
-    width: 100vw;
-}
-
-section:nth-child(2) {
-    margin-top: 5vh;
-}
-
-html {
-    scroll-behavior: smooth;
-}
 
