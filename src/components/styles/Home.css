@@ -1,0 +1,113 @@
+.Home {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15rem;
+}
+.upper-home{
+    display: flex;
+    flex-direction: row;
+    align-self: flex-start;
+
+}
+
+.upper-home svg:first-of-type {
+    position: relative;
+    top: 23rem;
+    left: 23rem;
+    scale: 1.1;
+    filter: drop-shadow(0.5rem 0.6rem 0.5rem rgb(0 0 0 / 0.4));
+}
+
+.upper-home svg:nth-of-type(2) {
+    position: relative;
+    top: 10rem;
+    left: 17rem;
+    scale: 1;
+    filter: drop-shadow(0.5rem 0.6rem 0.5rem rgb(0 0 0 / 0.4));
+}
+
+.upper-home svg:nth-of-type(3) {
+    position: relative;
+    top: 20rem;
+    left: 13rem;
+    scale: 1.5;
+    filter: drop-shadow(0.5rem 0.6rem 0.2rem rgb(0 0 0 / 0.4));
+}
+
+
+
+.dictionary {
+    width: 580px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-self: flex-start;
+    padding-left:15rem;
+    padding-top: 10rem;
+}
+
+.def-intro {
+    font-family: 'Playfair Display', serif;
+    display: flex;
+    flex-direction: row;
+    gap: 1rem
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300&family=Playfair+Display:wght@400;500&display=swap');
+h1 {
+	font-size: 8rem;
+}
+
+.title-subword {
+    align-self: flex-end;
+    font-size: 2rem;
+    color: #008bda;
+}
+
+.line {
+    border: 2px solid #969696;
+    width: 579px;
+    border-radius: 2px;
+}
+
+.def-body {
+    font-family: 'Lato', sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.pronunciation {
+    font-size: 1.5rem;
+    color: #008bda;
+}
+
+.definitions {
+    list-style: number;
+    padding-left: 1.2rem;
+    font-size: 1.2rem;
+    line-height: 150.5%;
+}
+
+li {
+    padding-left: 0.5rem;
+}
+
+.learn-more {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    font-family: 'Lato', sans-serif;
+}
+
+.learn-more p{
+    font-size: 1.5rem;
+    color: #008bda;
+}
+
+.learn-more svg{
+    color: #969696;
+}
+
