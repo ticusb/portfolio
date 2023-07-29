@@ -1,4 +1,3 @@
-
 # my-portfolio
 What more do you need to know?
 To start, welcome, get comfy.
