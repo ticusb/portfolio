@@ -3,8 +3,8 @@ import "./styles/Origin.css";
 
 const Origin = () => {
     return (
-        <div className="Origin">
-            
+        <div className="Origin" id="Origin">
+            <h2>Country of Origin</h2>
         </div>
     );
 }
