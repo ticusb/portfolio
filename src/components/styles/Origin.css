@@ -1,4 +1,44 @@
 .Origin {
-    scroll-snap-align: start;
-    height: 100vh
+    display: flex;
+    flex-direction: column;
+    gap: 5rem;
+    align-items: center;
+    padding-top: 3rem;
+    height: 90vh;
+    margin: auto;
+    width: 100vw;
+}
+.Origin p {
+    font-family: 'Lato', sans-serif;
+    width: 18.125rem;
+    font-size: 1.5rem;
+    line-height: 1.2;
+}
+
+.facts{
+    text-align: left;
+    align-self: flex-start;
+    padding-left: 1rem;
+}
+
+.career{
+    text-align: right;
+    align-self: flex-end;
+    padding-right: 1rem;
+}
+
+.img-group {
+    display: flex;
+    flex-direction: row;
+    gap: 4rem;
+}
+
+#RL-img {
+    height: 95px;
+    width: 171px;
+    padding-top: 2rem;
+}
+#Minion-img {
+    height: 132px;
+    width: 132px;
 }

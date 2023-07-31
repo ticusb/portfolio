@@ -6,7 +6,6 @@
     margin: auto;
     justify-content: center;
     align-items: center;
-    scroll-snap-align: start;
 }
 
 .upper-home{
@@ -274,6 +273,11 @@
     .learn-more:hover {
         scale: 1.1;
         transition: 0.3s ease-in-out;
+    }
+
+    .learn-more svg {
+        padding-top: 1rem;
+        width: 10rem;
     }
 
 }
