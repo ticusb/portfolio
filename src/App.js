@@ -1,6 +1,7 @@
 import './App.css';
 import Home from './components/Home'
 import Origin from './components/Origin';
+import Projects from './components/Projects';
 
 
 function App() {
@@ -9,7 +10,7 @@ function App() {
 
       <Home />
       <Origin />
-
+      <Projects />
     </div>
   );
 }
