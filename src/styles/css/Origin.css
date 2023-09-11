@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Koulen&display=swap');
+/* @import url('https://fonts.googleapis.com/css2?family=Koulen&display=swap');
 
 .Origin {
     display: flex;
@@ -49,7 +49,7 @@
     font-size: 9.6875rem;
     font-style: normal;
     font-weight: 400;
-    line-height: 76.5%; /* 7.41094rem */
+    line-height: 76.5%; 
     letter-spacing: -0.29063rem;
     background: linear-gradient(90deg, #1C9B3F 0%, rgba(255, 170, 5, 0.85) 100%);
     background-clip: text;
@@ -57,4 +57,4 @@
     -webkit-text-fill-color: transparent;
     align-self: flex-start;
     padding-left: 4rem;
-}
+}  */
