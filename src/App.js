@@ -1,8 +1,9 @@
 import './App.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import './styles/css/main.min.css';
 import Home from './components/Home'
 import NavBar from './components/NavBar';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import 'bootstrap/dist/css/bootstrap.min.css';
 
 
 function App() {
