@@ -13,6 +13,7 @@ function App() {
             <BrowserRouter>
                 <Routes>
                      <Route path='/' exact element={<Home />} />
+                     <Route path='/grouse' exact element={<Home />} />
                 </Routes>
             </BrowserRouter>
         </>
