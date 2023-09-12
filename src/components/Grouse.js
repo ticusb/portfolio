@@ -8,4 +8,4 @@ function Grouse(props) {
     );   
 }
 
-export default Goruse;
+export default Grouse;
