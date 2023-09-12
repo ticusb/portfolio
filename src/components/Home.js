@@ -1,7 +1,7 @@
 import React from 'react';
 import Card from 'react-bootstrap/Card';
 
-const Home = () => {
+function Home(props) {
     return (
         <div className="container-xl grid gap-0 row-gap-3" style={{display: 'grid'}}>
                 <div className='upper-home row'>
