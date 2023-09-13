@@ -19,7 +19,7 @@ function Home(props) {
                                 <Card.Subtitle>ti·cus | \&#39;tē-kuss\</Card.Subtitle>
                                 <ol className="definitions">
                                     <li> <Card.Text>the cooliest mf to ever face the stars.</Card.Text></li>
-                                    <li><Card.Text>A person characterized by their unreachable level of swag. One who talks the talk, walks the walk, and sucks the cock. Distinguishable by their eminating surrounding aura.</Card.Text></li>
+                                    <li><Card.Text>A person characterized by their unreachable level of swag. One who talks the talk, walks the walk. Distinguishable by their eminating surrounding aura.</Card.Text></li>
                                 </ol>
                             </Card.Body>
                         </Card>
