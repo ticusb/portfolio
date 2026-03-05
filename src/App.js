@@ -62,6 +62,14 @@ function App() {
     useEffect(() => {
         document.documentElement.style.setProperty("--accent", accent);
         localStorage.setItem("accent", accent);
+
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text x="16" y="24" font-family="monospace" font-weight="700" font-size="18" fill="${accent}" text-anchor="middle">lb</text></svg>`;
+        const url = URL.createObjectURL(
+            new Blob([svg], { type: "image/svg+xml" }),
+        );
+        const link = document.querySelector("link[rel='icon']");
+        if (link) link.href = url;
+        return () => URL.revokeObjectURL(url);
     }, [accent]);
 
     useEffect(() => {
