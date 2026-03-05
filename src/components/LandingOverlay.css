@@ -2,18 +2,15 @@
     position: fixed;
     inset: 0;
     z-index: 9999;
-    /* semi-transparent so the hero bleeds through */
     background: rgba(5, 5, 5, 0.91);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: default;
     transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1);
-    /* CRT flicker via brightness so it never conflicts with the opacity transition */
     animation: lo-flicker 9s ease infinite;
 }
 
-/* vignette — darkens corners for depth */
 .lo::before {
     content: '';
     position: absolute;
@@ -23,7 +20,6 @@
     z-index: 0;
 }
 
-/* scanlines */
 .lo::after {
     content: '';
     position: absolute;
@@ -42,10 +38,8 @@
 .lo--exit {
     opacity: 0;
     pointer-events: none;
-    animation: none; /* stop flicker during fade */
+    animation: none;
 }
-
-/* ── terminal block ── */
 
 .lo-terminal {
     position: relative;
@@ -53,6 +47,7 @@
     padding: 0 2rem;
     max-width: 540px;
     width: 100%;
+    cursor: default;
 }
 
 .lo-header {
@@ -94,7 +89,6 @@
     transition: opacity 0.4s ease;
 }
 
-/* completed lines recede so the active one pops */
 .lo-line--done {
     opacity: 0.35;
 }
@@ -115,6 +109,38 @@
     vertical-align: text-bottom;
     animation: lo-blink 0.95s step-end infinite;
     transition: background 0.3s;
+}
+
+.lo-piece {
+    cursor: pointer;
+    position: relative;
+}
+
+.lo-piece::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.lo-piece:hover::after {
+    opacity: 0.55;
+}
+
+.lo-line--egg {
+    color: var(--accent) !important;
+    opacity: 1 !important;
+    animation: lo-egg-in 0.15s ease both;
+    transition: color 0.3s;
+}
+
+.lo-line--egg span:last-child {
+    animation: lo-egg-glitch 0.35s ease 0.1s both;
 }
 
 .lo-skip {
@@ -148,4 +174,18 @@
     75%       { filter: brightness(0.98); }
     76%       { filter: brightness(0.95); }
     77%       { filter: brightness(0.98); }
+}
+
+@keyframes lo-egg-in {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes lo-egg-glitch {
+    0%   { transform: translateX(0); filter: none; }
+    20%  { transform: translateX(-3px); filter: hue-rotate(60deg) brightness(1.4); }
+    45%  { transform: translateX(4px);  filter: hue-rotate(-60deg); }
+    65%  { transform: translateX(-2px); }
+    85%  { transform: translateX(2px); }
+    100% { transform: translateX(0); filter: none; }
 }

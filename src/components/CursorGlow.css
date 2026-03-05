@@ -12,7 +12,6 @@
     transition: opacity 0.3s;
 }
 
-/* only show on devices with a real pointer (not touch) */
 @media (hover: none) {
     .cursor-glow {
         display: none;

@@ -5,7 +5,6 @@
 }
 
 :root {
-    /* light mode (default) */
     --bg: #f7f7f5;
     --bg-glass: rgba(247, 247, 245, 0.85);
     --text: #111111;
@@ -24,7 +23,6 @@
     --border: #1c1c1c;
 }
 
-/* applied only during theme switch to avoid fighting hover/animation transitions */
 .theme-transition *,
 .theme-transition *::before,
 .theme-transition *::after {

@@ -42,7 +42,6 @@ function Home() {
     return (
         <main className="home">
 
-            {/* ── Hero ── */}
             <section className="hero">
                 <div className="hero-inner">
                     <span className="hero-label">software engineer</span>
@@ -69,7 +68,6 @@ function Home() {
                 </div>
             </section>
 
-            {/* ── About + Stack ── */}
             <section className="about-section home-reveal">
                 <div className="about-grid">
                     <div className="about-text">
@@ -104,7 +102,6 @@ function Home() {
                 </div>
             </section>
 
-            {/* ── Currently Building ── */}
             <section className="building-section home-reveal">
                 <span className="section-label">currently building</span>
                 <ul className="building-list">

@@ -2,10 +2,6 @@
     min-height: 100vh;
 }
 
-/* ─────────────────────────────────────
-   Hero
-───────────────────────────────────── */
-
 .hero {
     min-height: 100vh;
     display: flex;
@@ -130,10 +126,6 @@
     animation: scrollPulse 2s ease infinite;
 }
 
-/* ─────────────────────────────────────
-   Scroll reveal
-───────────────────────────────────── */
-
 .home-reveal {
     opacity: 0;
     transform: translateY(32px);
@@ -146,10 +138,6 @@
     transform: translateY(0);
 }
 
-/* ─────────────────────────────────────
-   Shared section styles
-───────────────────────────────────── */
-
 .section-label {
     display: block;
     font-family: var(--font-mono);
@@ -160,10 +148,6 @@
     margin-bottom: 1.75rem;
     transition: color 0.3s;
 }
-
-/* ─────────────────────────────────────
-   About + Stack
-───────────────────────────────────── */
 
 .about-section {
     border-top: 1px solid var(--border);
@@ -226,10 +210,6 @@
     border-color: var(--accent);
     color: var(--text);
 }
-
-/* ─────────────────────────────────────
-   Currently Building
-───────────────────────────────────── */
 
 .building-section {
     border-top: 1px solid var(--border);
@@ -297,10 +277,6 @@
     transition: color 0.3s;
 }
 
-/* ─────────────────────────────────────
-   Animations
-───────────────────────────────────── */
-
 @keyframes fadeUp {
     from { opacity: 0; transform: translateY(32px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -315,10 +291,6 @@
     0%, 100% { transform: scale(1);   opacity: 0.35; }
     50%       { transform: scale(2.2); opacity: 0; }
 }
-
-/* ─────────────────────────────────────
-   Responsive
-───────────────────────────────────── */
 
 @media (max-width: 700px) {
     .hero {
