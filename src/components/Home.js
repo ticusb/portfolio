@@ -115,8 +115,13 @@ function Home({ overlayDone }) {
                             className="hero-name"
                             aria-label="Leviticus Brandt"
                         >
-                            {/* prettier-ignore */}
-                            <span ref={leviRef} className="hero-levi" aria-hidden="true">Levi</span>
+                            <span
+                                ref={leviRef}
+                                className="hero-levi"
+                                aria-hidden="true"
+                            >
+                                Levi
+                            </span>
                             <span className="hero-t-wrap" aria-hidden="true">
                                 <span className="hero-T-up">T</span>
                                 <span className="hero-icus">icus</span>

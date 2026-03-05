@@ -423,6 +423,40 @@
     }
 }
 
+@media (hover: none) {
+    .hero-levi {
+        max-width: 400px;
+        opacity: 0.35;
+        transition: none;
+    }
+
+    .hero-T-up {
+        opacity: 0;
+        transform: none;
+        transition: none;
+    }
+
+    .hero-T-lo {
+        opacity: 1;
+        transform: translateY(0);
+        transition: none;
+    }
+
+    .hero-icus {
+        transform: translateX(-0.3em);
+        transition: none;
+    }
+
+    .hero-pron-short {
+        opacity: 0;
+    }
+
+    .hero-pron-full {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
 @media (max-width: 700px) {
     .hero {
         padding: 7rem 1.5rem 3rem;
