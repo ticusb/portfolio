@@ -1,0 +1,60 @@
+.nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.75rem 3rem;
+    transition: background 0.3s ease, padding 0.3s ease, border-color 0.3s ease;
+    border-bottom: 1px solid transparent;
+}
+
+.nav--scrolled {
+    background: rgba(12, 12, 12, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 1.1rem 3rem;
+    border-bottom-color: var(--border);
+}
+
+.nav-brand {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+}
+
+.nav-links {
+    display: flex;
+    gap: 2.5rem;
+}
+
+.nav-links a {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    transition: color 0.2s;
+    letter-spacing: 0.02em;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+    color: var(--text);
+}
+
+@media (max-width: 600px) {
+    .nav {
+        padding: 1.5rem 1.5rem;
+    }
+
+    .nav--scrolled {
+        padding: 1rem 1.5rem;
+    }
+
+    .nav-links {
+        gap: 1.5rem;
+    }
+}
