@@ -1,0 +1,66 @@
+.lo {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #0c0c0c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    transition: opacity 0.68s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lo--exit {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.lo-text {
+    font-family: var(--font-mono);
+    font-size: clamp(1rem, 2.5vw, 1.45rem);
+    color: #e8e8e8;
+    display: flex;
+    align-items: center;
+    min-height: 1.6em;
+    padding: 0 2rem;
+    text-align: center;
+    transition: opacity 0.18s ease;
+}
+
+.lo-text--fade {
+    opacity: 0;
+}
+
+.lo-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.15em;
+    background: var(--accent);
+    margin-left: 3px;
+    vertical-align: text-bottom;
+    flex-shrink: 0;
+    animation: lo-blink 0.9s step-end infinite;
+    transition: background 0.3s;
+}
+
+.lo-skip {
+    position: absolute;
+    bottom: 2.5rem;
+    right: 3rem;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: #333;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    pointer-events: none;
+    transition: color 0.3s;
+}
+
+.lo:hover .lo-skip {
+    color: #555;
+}
+
+@keyframes lo-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+}

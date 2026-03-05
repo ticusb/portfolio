@@ -3,11 +3,13 @@ import Home from './components/Home';
 import Projects from './components/Projects';
 import NavBar from './components/NavBar';
 import CursorGlow from './components/CursorGlow';
+import LandingOverlay from './components/LandingOverlay';
 import { Routes, Route } from "react-router-dom";
 
 const DEFAULT_ACCENT = '#16a34a';
 
 function App() {
+    const [overlayDone, setOverlayDone] = useState(false);
     const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
     const [accent, setAccent] = useState(() => localStorage.getItem('accent') || DEFAULT_ACCENT);
 
@@ -29,6 +31,7 @@ function App() {
 
     return (
         <>
+            {!overlayDone && <LandingOverlay onDone={() => setOverlayDone(true)} />}
             <CursorGlow />
             <NavBar theme={theme} toggleTheme={toggleTheme} accent={accent} setAccent={setAccent} />
             <Routes>

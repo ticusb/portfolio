@@ -2,6 +2,10 @@
     min-height: 100vh;
 }
 
+/* ─────────────────────────────────────
+   Hero
+───────────────────────────────────── */
+
 .hero {
     min-height: 100vh;
     display: flex;
@@ -12,11 +16,8 @@
     margin: 0 auto;
     animation: fadeUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
     position: relative;
-    /* subtle dot grid */
     background-image: radial-gradient(circle, var(--border) 1.5px, transparent 1.5px);
     background-size: 28px 28px;
-    background-position: center center;
-    /* fade out the grid toward the bottom */
     -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
     mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
 }
@@ -129,31 +130,197 @@
     animation: scrollPulse 2s ease infinite;
 }
 
+/* ─────────────────────────────────────
+   Scroll reveal
+───────────────────────────────────── */
+
+.home-reveal {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.home-reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ─────────────────────────────────────
+   Shared section styles
+───────────────────────────────────── */
+
+.section-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 1.75rem;
+    transition: color 0.3s;
+}
+
+/* ─────────────────────────────────────
+   About + Stack
+───────────────────────────────────── */
+
+.about-section {
+    border-top: 1px solid var(--border);
+    padding: 6rem 3rem;
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+.about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+}
+
+.about-text p {
+    font-size: 0.975rem;
+    color: var(--text);
+    opacity: 0.65;
+    line-height: 1.8;
+    max-width: 400px;
+}
+
+.about-text p + p {
+    margin-top: 1.1rem;
+}
+
+.stack-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.stack-category {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
+.stack-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.stack-pills span {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    padding: 0.22rem 0.55rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-muted);
+    letter-spacing: 0.03em;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+.stack-pills span:hover {
+    border-color: var(--accent);
+    color: var(--text);
+}
+
+/* ─────────────────────────────────────
+   Currently Building
+───────────────────────────────────── */
+
+.building-section {
+    border-top: 1px solid var(--border);
+    padding: 6rem 3rem;
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+.building-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
+
+.building-item {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+}
+
+.building-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    margin-top: 0.45rem;
+    position: relative;
+    transition: background 0.3s;
+}
+
+.building-dot::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.35;
+    animation: dotPulse 2.2s ease infinite;
+    transition: background 0.3s;
+}
+
+.building-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.35rem;
+    letter-spacing: -0.01em;
+}
+
+.building-desc {
+    font-size: 0.9rem;
+    color: var(--text);
+    opacity: 0.55;
+    line-height: 1.65;
+    max-width: 520px;
+    margin-bottom: 0.5rem;
+}
+
+.building-tech {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    transition: color 0.3s;
+}
+
+/* ─────────────────────────────────────
+   Animations
+───────────────────────────────────── */
+
 @keyframes fadeUp {
-    from {
-        opacity: 0;
-        transform: translateY(32px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(32px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes scrollPulse {
-    0%, 100% {
-        opacity: 0.3;
-        transform: scaleY(0.8);
-        transform-origin: top;
-    }
-    50% {
-        opacity: 1;
-        transform: scaleY(1);
-        transform-origin: top;
-    }
+    0%, 100% { opacity: 0.3; transform: scaleY(0.8); transform-origin: top; }
+    50%       { opacity: 1;   transform: scaleY(1);   transform-origin: top; }
 }
 
-@media (max-width: 600px) {
+@keyframes dotPulse {
+    0%, 100% { transform: scale(1);   opacity: 0.35; }
+    50%       { transform: scale(2.2); opacity: 0; }
+}
+
+/* ─────────────────────────────────────
+   Responsive
+───────────────────────────────────── */
+
+@media (max-width: 700px) {
     .hero {
         padding: 7rem 1.5rem 3rem;
     }
@@ -162,5 +329,15 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 1.5rem;
+    }
+
+    .about-section,
+    .building-section {
+        padding: 4rem 1.5rem;
+    }
+
+    .about-grid {
+        grid-template-columns: 1fr;
+        gap: 3rem;
     }
 }
