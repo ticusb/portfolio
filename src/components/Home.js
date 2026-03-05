@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import "./Home.css";
 
@@ -46,7 +46,48 @@ const BUILDING = [
     },
 ];
 
-function Home() {
+function Home({ overlayDone }) {
+    const nameRef = useRef(null);
+    const leviRef = useRef(null);
+    const readyRef = useRef(false);
+
+    useEffect(() => {
+        readyRef.current = overlayDone;
+    }, [overlayDone]);
+
+    useEffect(() => {
+        const move = (e) => {
+            if (!readyRef.current || !nameRef.current || !leviRef.current)
+                return;
+            const rect = nameRef.current.getBoundingClientRect();
+            const dx = Math.max(
+                rect.left - e.clientX,
+                0,
+                e.clientX - rect.right,
+            );
+            const dy = Math.max(
+                rect.top - e.clientY,
+                0,
+                e.clientY - rect.bottom,
+            );
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const progress = Math.max(0, 1 - dist / 180) ** 1.8;
+            leviRef.current.style.maxWidth = `${progress * 400}px`;
+            leviRef.current.style.opacity = String(progress);
+        };
+        const leave = () => {
+            if (!leviRef.current) return;
+            leviRef.current.style.maxWidth = "0px";
+            leviRef.current.style.opacity = "0";
+        };
+        window.addEventListener("mousemove", move);
+        window.addEventListener("mouseleave", leave);
+        return () => {
+            window.removeEventListener("mousemove", move);
+            window.removeEventListener("mouseleave", leave);
+        };
+    }, []);
+
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) =>
@@ -66,14 +107,33 @@ function Home() {
             <section className="hero">
                 <div className="hero-inner">
                     <span className="hero-label">software engineer</span>
-                    <h1 className="hero-name">
-                        Ticus
-                        <br />
-                        Brandt
-                    </h1>
-                    <p className="hero-pronunciation">
-                        / tee&nbsp;&middot;&nbsp;kus /
-                    </p>
+                    <div
+                        className={`hero-name-wrap${overlayDone ? " ready" : ""}`}
+                    >
+                        <h1
+                            ref={nameRef}
+                            className="hero-name"
+                            aria-label="Leviticus Brandt"
+                        >
+                            {/* prettier-ignore */}
+                            <span ref={leviRef} className="hero-levi" aria-hidden="true">Levi</span>
+                            <span className="hero-t-wrap" aria-hidden="true">
+                                <span className="hero-T-up">T</span>
+                                <span className="hero-icus">icus</span>
+                                <span className="hero-T-lo">t</span>
+                            </span>
+                            <br />
+                            Brandt
+                        </h1>
+                        <p className="hero-pronunciation">
+                            <span className="hero-pron-full" aria-hidden="true">
+                                /&nbsp;leh&nbsp;&middot;&nbsp;vit&nbsp;&middot;&nbsp;ih&nbsp;&middot;&nbsp;kus&nbsp;/
+                            </span>
+                            <span className="hero-pron-short">
+                                /&nbsp;tee&nbsp;&middot;&nbsp;kus&nbsp;/
+                            </span>
+                        </p>
+                    </div>
                     <p className="hero-meta">
                         D365 Developer &nbsp;&middot;&nbsp; Colorado State
                         &apos;24

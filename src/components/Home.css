@@ -31,6 +31,69 @@
     z-index: 1;
 }
 
+.hero-name-wrap {
+    display: inline-block;
+}
+
+.hero-levi {
+    display: inline-block;
+    overflow: visible;
+    clip-path: inset(0);
+    max-width: 0;
+    opacity: 0;
+    white-space: nowrap;
+    vertical-align: baseline;
+    transition:
+        max-width 0.12s ease,
+        opacity 0.12s ease;
+}
+
+.hero-t-wrap {
+    display: inline-block;
+    position: relative;
+    vertical-align: baseline;
+}
+
+.hero-T-up {
+    display: inline-block;
+    vertical-align: baseline;
+    transition:
+        transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 0.2s ease;
+}
+
+.hero-T-lo {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(0.4em);
+    transition:
+        transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 0.2s ease;
+}
+
+.hero-icus {
+    display: inline-block;
+    vertical-align: baseline;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-name-wrap.ready:hover .hero-T-up {
+    opacity: 0;
+    transform: translateY(-0.4em);
+}
+
+.hero-name-wrap.ready:hover .hero-T-lo {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.hero-name-wrap.ready:hover .hero-icus {
+    transform: translateX(-0.3em);
+}
+
 .hero-label {
     display: inline-block;
     font-family: var(--font-mono);
@@ -58,6 +121,34 @@
     letter-spacing: 0.08em;
     margin-bottom: 1.5rem;
     margin-top: -1.25rem;
+    position: relative;
+}
+
+.hero-pron-full {
+    position: absolute;
+    left: 0;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition:
+        opacity 0.3s ease 0.2s,
+        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.hero-pron-short {
+    display: inline-block;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+}
+
+.hero-name-wrap.ready:hover .hero-pron-full {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.hero-name-wrap.ready:hover .hero-pron-short {
+    opacity: 0;
 }
 
 .hero-meta {

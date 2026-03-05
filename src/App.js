@@ -118,7 +118,7 @@ function App() {
                 setAccent={setAccent}
             />
             <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<Home overlayDone={overlayDone} />} />
                 <Route path="/projects" element={<Projects />} />
             </Routes>
         </>
