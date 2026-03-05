@@ -8,7 +8,10 @@
     justify-content: space-between;
     align-items: center;
     padding: 1.75rem 3rem;
-    transition: background 0.3s ease, padding 0.3s ease, border-color 0.3s ease;
+    transition:
+        background 0.3s ease,
+        padding 0.3s ease,
+        border-color 0.3s ease;
     border-bottom: 1px solid transparent;
 }
 
@@ -70,7 +73,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: color 0.2s, border-color 0.2s, background 0.2s;
+    transition:
+        color 0.2s,
+        border-color 0.2s,
+        background 0.2s;
     line-height: 1;
 }
 
@@ -86,7 +92,9 @@
     border-radius: 50%;
     border: 2px solid transparent;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s;
     outline: 2px solid var(--border);
     outline-offset: 2px;
 }
@@ -136,7 +144,9 @@
     border-radius: 50%;
     border: none;
     cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s;
+    transition:
+        transform 0.15s,
+        box-shadow 0.15s;
     outline: 2px solid transparent;
     outline-offset: 2px;
 }
@@ -184,8 +194,14 @@
 }
 
 @keyframes popoverIn {
-    from { opacity: 0; transform: translateY(-6px) scale(0.97); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 @media (max-width: 600px) {

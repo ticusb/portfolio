@@ -12,16 +12,20 @@
 }
 
 .lo::before {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, 0.65) 100%);
+    background: radial-gradient(
+        ellipse at center,
+        transparent 35%,
+        rgba(0, 0, 0, 0.65) 100%
+    );
     pointer-events: none;
     z-index: 0;
 }
 
 .lo::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     background: repeating-linear-gradient(
@@ -117,7 +121,7 @@
 }
 
 .lo-piece::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: -1px;
     left: 0;
@@ -161,31 +165,75 @@
 }
 
 @keyframes lo-blink {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0; }
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
 }
 
 @keyframes lo-flicker {
-    0%, 100% { filter: brightness(1); }
-    8%        { filter: brightness(0.97); }
-    40%       { filter: brightness(0.99); }
-    41%       { filter: brightness(0.94); }
-    42%       { filter: brightness(0.99); }
-    75%       { filter: brightness(0.98); }
-    76%       { filter: brightness(0.95); }
-    77%       { filter: brightness(0.98); }
+    0%,
+    100% {
+        filter: brightness(1);
+    }
+    8% {
+        filter: brightness(0.97);
+    }
+    40% {
+        filter: brightness(0.99);
+    }
+    41% {
+        filter: brightness(0.94);
+    }
+    42% {
+        filter: brightness(0.99);
+    }
+    75% {
+        filter: brightness(0.98);
+    }
+    76% {
+        filter: brightness(0.95);
+    }
+    77% {
+        filter: brightness(0.98);
+    }
 }
 
 @keyframes lo-egg-in {
-    from { opacity: 0; transform: translateX(-8px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 @keyframes lo-egg-glitch {
-    0%   { transform: translateX(0); filter: none; }
-    20%  { transform: translateX(-3px); filter: hue-rotate(60deg) brightness(1.4); }
-    45%  { transform: translateX(4px);  filter: hue-rotate(-60deg); }
-    65%  { transform: translateX(-2px); }
-    85%  { transform: translateX(2px); }
-    100% { transform: translateX(0); filter: none; }
+    0% {
+        transform: translateX(0);
+        filter: none;
+    }
+    20% {
+        transform: translateX(-3px);
+        filter: hue-rotate(60deg) brightness(1.4);
+    }
+    45% {
+        transform: translateX(4px);
+        filter: hue-rotate(-60deg);
+    }
+    65% {
+        transform: translateX(-2px);
+    }
+    85% {
+        transform: translateX(2px);
+    }
+    100% {
+        transform: translateX(0);
+        filter: none;
+    }
 }

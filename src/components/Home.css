@@ -12,7 +12,11 @@
     margin: 0 auto;
     animation: fadeUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
     position: relative;
-    background-image: radial-gradient(circle, var(--border) 1.5px, transparent 1.5px);
+    background-image: radial-gradient(
+        circle,
+        var(--border) 1.5px,
+        transparent 1.5px
+    );
     background-size: 28px 28px;
     -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
     mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
@@ -47,6 +51,15 @@
     color: var(--text);
 }
 
+.hero-pronunciation {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    margin-bottom: 1.5rem;
+    margin-top: -1.25rem;
+}
+
 .hero-meta {
     font-size: 0.9rem;
     color: var(--text-muted);
@@ -79,7 +92,9 @@
     font-weight: 600;
     border-radius: 3px;
     letter-spacing: 0.01em;
-    transition: opacity 0.2s, background 0.3s;
+    transition:
+        opacity 0.2s,
+        background 0.3s;
 }
 
 .btn-primary:hover {
@@ -129,8 +144,9 @@
 .home-reveal {
     opacity: 0;
     transform: translateY(32px);
-    transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-                transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+    transition:
+        opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .home-reveal.visible {
@@ -203,7 +219,9 @@
     border-radius: 3px;
     color: var(--text-muted);
     letter-spacing: 0.03em;
-    transition: border-color 0.2s, color 0.2s;
+    transition:
+        border-color 0.2s,
+        color 0.2s;
 }
 
 .stack-pills span:hover {
@@ -242,7 +260,7 @@
 }
 
 .building-dot::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: -4px;
     border-radius: 50%;
@@ -278,18 +296,40 @@
 }
 
 @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(32px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(32px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes scrollPulse {
-    0%, 100% { opacity: 0.3; transform: scaleY(0.8); transform-origin: top; }
-    50%       { opacity: 1;   transform: scaleY(1);   transform-origin: top; }
+    0%,
+    100% {
+        opacity: 0.3;
+        transform: scaleY(0.8);
+        transform-origin: top;
+    }
+    50% {
+        opacity: 1;
+        transform: scaleY(1);
+        transform-origin: top;
+    }
 }
 
 @keyframes dotPulse {
-    0%, 100% { transform: scale(1);   opacity: 0.35; }
-    50%       { transform: scale(2.2); opacity: 0; }
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.35;
+    }
+    50% {
+        transform: scale(2.2);
+        opacity: 0;
+    }
 }
 
 @media (max-width: 700px) {

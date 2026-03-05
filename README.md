@@ -16,9 +16,8 @@ my personal portfolio. live at [ticusb.com](https://ticusb.com).
 ## Features
 
 - light/dark mode toggle + live accent color picker (persisted to localStorage)
-- terminal-style landing animation with easter eggs
+- terminal-style landing animation 
 - cursor glow that follows your mouse and reacts to your accent color
-- konami code. you know what to do.
 
 ## Development
 
