@@ -2,44 +2,118 @@
     position: fixed;
     inset: 0;
     z-index: 9999;
-    background: #0c0c0c;
+    /* semi-transparent so the hero bleeds through */
+    background: rgba(5, 5, 5, 0.91);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: default;
-    transition: opacity 0.68s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+    /* CRT flicker via brightness so it never conflicts with the opacity transition */
+    animation: lo-flicker 9s ease infinite;
+}
+
+/* vignette — darkens corners for depth */
+.lo::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, 0.65) 100%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* scanlines */
+.lo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0, 0, 0, 0.09) 3px,
+        rgba(0, 0, 0, 0.09) 4px
+    );
+    pointer-events: none;
+    z-index: 0;
 }
 
 .lo--exit {
     opacity: 0;
     pointer-events: none;
+    animation: none; /* stop flicker during fade */
 }
 
-.lo-text {
+/* ── terminal block ── */
+
+.lo-terminal {
+    position: relative;
+    z-index: 2;
+    padding: 0 2rem;
+    max-width: 540px;
+    width: 100%;
+}
+
+.lo-header {
     font-family: var(--font-mono);
-    font-size: clamp(1rem, 2.5vw, 1.45rem);
-    color: #e8e8e8;
+    font-size: 0.82rem;
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.04em;
+}
+
+.lo-domain {
+    color: var(--accent);
+    transition: color 0.3s;
+}
+
+.lo-shell {
+    color: #333;
+}
+
+.lo-divider {
+    height: 1px;
+    background: linear-gradient(to right, #222, #111);
+    margin-bottom: 1.6rem;
+}
+
+.lo-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+.lo-line {
+    font-family: var(--font-mono);
+    font-size: clamp(0.9rem, 2.2vw, 1.2rem);
     display: flex;
     align-items: center;
-    min-height: 1.6em;
-    padding: 0 2rem;
-    text-align: center;
-    transition: opacity 0.18s ease;
+    gap: 0.65rem;
+    min-height: 1.5em;
+    color: #d0d0d0;
+    transition: opacity 0.4s ease;
 }
 
-.lo-text--fade {
-    opacity: 0;
+/* completed lines recede so the active one pops */
+.lo-line--done {
+    opacity: 0.35;
+}
+
+.lo-prompt {
+    color: var(--accent);
+    flex-shrink: 0;
+    user-select: none;
+    transition: color 0.3s;
 }
 
 .lo-cursor {
     display: inline-block;
-    width: 2px;
-    height: 1.15em;
+    width: 0.55em;
+    height: 1.05em;
     background: var(--accent);
-    margin-left: 3px;
-    vertical-align: text-bottom;
     flex-shrink: 0;
-    animation: lo-blink 0.9s step-end infinite;
+    vertical-align: text-bottom;
+    animation: lo-blink 0.95s step-end infinite;
     transition: background 0.3s;
 }
 
@@ -48,19 +122,30 @@
     bottom: 2.5rem;
     right: 3rem;
     font-family: var(--font-mono);
-    font-size: 0.65rem;
-    color: #333;
+    font-size: 0.6rem;
+    color: #1e1e1e;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     pointer-events: none;
-    transition: color 0.3s;
+    transition: color 0.4s;
 }
 
 .lo:hover .lo-skip {
-    color: #555;
+    color: #3a3a3a;
 }
 
 @keyframes lo-blink {
     0%, 100% { opacity: 1; }
     50%       { opacity: 0; }
+}
+
+@keyframes lo-flicker {
+    0%, 100% { filter: brightness(1); }
+    8%        { filter: brightness(0.97); }
+    40%       { filter: brightness(0.99); }
+    41%       { filter: brightness(0.94); }
+    42%       { filter: brightness(0.99); }
+    75%       { filter: brightness(0.98); }
+    76%       { filter: brightness(0.95); }
+    77%       { filter: brightness(0.98); }
 }
