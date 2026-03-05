@@ -1,27 +1,124 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, useRef } from "react";
+import { Link, useLocation } from "react-router-dom";
+import "./NavBar.css";
 
-function NavBar(props) {
+const PRESETS = [
+    "#16a34a",
+    "#2563eb",
+    "#e11d48",
+    "#d97706",
+    "#7c3aed",
+    "#0891b2",
+];
+
+function NavBar({ theme, toggleTheme, accent, setAccent }) {
+    const [scrolled, setScrolled] = useState(false);
+    const [pickerOpen, setPickerOpen] = useState(false);
+    const location = useLocation();
+    const pickerRef = useRef(null);
+
+    useEffect(() => {
+        const onScroll = () => setScrolled(window.scrollY > 20);
+        window.addEventListener("scroll", onScroll);
+        return () => window.removeEventListener("scroll", onScroll);
+    }, []);
+
+    useEffect(() => {
+        const onClickOutside = (e) => {
+            if (pickerRef.current && !pickerRef.current.contains(e.target)) {
+                setPickerOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", onClickOutside);
+        return () => document.removeEventListener("mousedown", onClickOutside);
+    }, []);
+
     return (
-        <nav className="navbar navbar-light bg-transparent navbar-expand-lg mb-3">
-            <div className="container-fluid">
-                <a className="navbar-brand" href="/">Tucus</a>
-                <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
-                    <span className="navbar-toggler-icon"></span>
-                </button>
-                <div className="collapse navbar-collapse justify-content-end " id="navbarNavAltMarkup">
-                    <ul className="navbar-nav">
-                        <li className='nav-item'>
-                            <Link className="nav-link active" aria-current="page" to="/">Home</Link>
-                        </li>
-                        <li className='nav-item'>
-                            <Link className="nav-link" to="/projects">Projects</Link>
-                        </li>
-                    </ul>
+        <nav className={`nav${scrolled ? " nav--scrolled" : ""}`}>
+            <Link to="/" className="nav-brand">
+                lb
+            </Link>
+            <div className="nav-right">
+                <ul className="nav-links">
+                    <li>
+                        <Link
+                            to="/"
+                            className={
+                                location.pathname === "/" ? "active" : ""
+                            }
+                        >
+                            home
+                        </Link>
+                    </li>
+                    <li>
+                        <Link
+                            to="/projects"
+                            className={
+                                location.pathname === "/projects"
+                                    ? "active"
+                                    : ""
+                            }
+                        >
+                            projects
+                        </Link>
+                    </li>
+                </ul>
+                <div className="nav-controls">
+                    <button
+                        className="theme-btn"
+                        onClick={toggleTheme}
+                        aria-label={
+                            theme === "light"
+                                ? "Switch to dark mode"
+                                : "Switch to light mode"
+                        }
+                        title={theme === "light" ? "Dark mode" : "Light mode"}
+                    >
+                        {theme === "light" ? "◐" : "◑"}
+                    </button>
+                    <div className="picker-wrap" ref={pickerRef}>
+                        <button
+                            className="accent-btn"
+                            style={{ background: accent }}
+                            onClick={() => setPickerOpen((o) => !o)}
+                            aria-label="Change accent color"
+                            title="Change accent color"
+                        />
+                        {pickerOpen && (
+                            <div className="picker-popover">
+                                <p className="picker-heading">accent</p>
+                                <div className="picker-presets">
+                                    {PRESETS.map((c) => (
+                                        <button
+                                            key={c}
+                                            className={`swatch${accent === c ? " swatch--active" : ""}`}
+                                            style={{ background: c }}
+                                            onClick={() => {
+                                                setAccent(c);
+                                                setPickerOpen(false);
+                                            }}
+                                            aria-label={`Set accent to ${c}`}
+                                        />
+                                    ))}
+                                </div>
+                                <label className="picker-custom">
+                                    <span>custom</span>
+                                    <input
+                                        type="color"
+                                        value={accent}
+                                        onChange={(e) =>
+                                            setAccent(e.target.value)
+                                        }
+                                        className="picker-wheel"
+                                    />
+                                </label>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </nav>
-    )
+    );
 }
 
 export default NavBar;

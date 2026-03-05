@@ -1,0 +1,219 @@
+.nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.75rem 3rem;
+    transition:
+        background 0.3s ease,
+        padding 0.3s ease,
+        border-color 0.3s ease;
+    border-bottom: 1px solid transparent;
+}
+
+.nav--scrolled {
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 1.1rem 3rem;
+    border-bottom-color: var(--border);
+}
+
+.nav-brand {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+    transition: color 0.2s;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+}
+
+.nav-links {
+    display: flex;
+    gap: 2.5rem;
+}
+
+.nav-links a {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    transition: color 0.2s;
+    letter-spacing: 0.02em;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+    color: var(--text);
+}
+
+.nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.theme-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+        color 0.2s,
+        border-color 0.2s,
+        background 0.2s;
+    line-height: 1;
+}
+
+.theme-btn:hover {
+    color: var(--text);
+    border-color: var(--text-muted);
+    background: var(--border);
+}
+
+.accent-btn {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s;
+    outline: 2px solid var(--border);
+    outline-offset: 2px;
+}
+
+.accent-btn:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 3px var(--border);
+}
+
+.picker-wrap {
+    position: relative;
+}
+
+.picker-popover {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.85rem);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    width: 160px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    animation: popoverIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+    z-index: 200;
+}
+
+.picker-heading {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+}
+
+.picker-presets {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.4rem;
+    margin-bottom: 0.875rem;
+}
+
+.swatch {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    transition:
+        transform 0.15s,
+        box-shadow 0.15s;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+}
+
+.swatch:hover {
+    transform: scale(1.2);
+}
+
+.swatch--active {
+    outline-color: var(--text);
+}
+
+.picker-custom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+}
+
+.picker-custom span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+}
+
+.picker-wheel {
+    width: 1.5rem;
+    height: 1.5rem;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0;
+    background: none;
+    overflow: hidden;
+}
+
+.picker-wheel::-webkit-color-swatch-wrapper {
+    padding: 0;
+    border-radius: 50%;
+}
+
+.picker-wheel::-webkit-color-swatch {
+    border: 1px solid var(--border);
+    border-radius: 50%;
+}
+
+@keyframes popoverIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (max-width: 600px) {
+    .nav {
+        padding: 1.5rem 1.5rem;
+    }
+
+    .nav--scrolled {
+        padding: 1rem 1.5rem;
+    }
+
+    .nav-links {
+        gap: 1.5rem;
+    }
+}

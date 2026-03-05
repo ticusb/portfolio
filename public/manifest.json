@@ -1,25 +1,25 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
-  "icons": [
-    {
-      "src": "icon/favicon.ico",
-      "sizes": " 32x32 16x16",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "icon/logo16.png",
-      "type": "image/png",
-      "sizes": "16x16"
-    },
-    {
-      "src": "icon/logo32.png",
-      "type": "image/png",
-      "sizes": "32x32"
-    }
-  ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+    "short_name": "lb",
+    "name": "Leviticus Brandt",
+    "icons": [
+        {
+            "src": "icon/favicon.ico",
+            "sizes": "16x16 32x32",
+            "type": "image/x-icon"
+        },
+        {
+            "src": "icon/android-chrome-192x192.png",
+            "type": "image/png",
+            "sizes": "192x192"
+        },
+        {
+            "src": "icon/android-chrome-512x512.png",
+            "type": "image/png",
+            "sizes": "512x512"
+        }
+    ],
+    "start_url": ".",
+    "display": "standalone",
+    "theme_color": "#f7f7f5",
+    "background_color": "#f7f7f5"
 }

@@ -1,21 +1,58 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --bg: #f7f7f5;
+    --bg-glass: rgba(247, 247, 245, 0.85);
+    --text: #111111;
+    --text-muted: #aaaaaa;
+    --accent: #16a34a;
+    --border: #e4e4e2;
+    --font: "Inter", system-ui, -apple-system, sans-serif;
+    --font-mono:
+        "JetBrains Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
+}
+
+[data-theme="dark"] {
+    --bg: #0c0c0c;
+    --bg-glass: rgba(12, 12, 12, 0.85);
+    --text: #e8e8e8;
+    --text-muted: #505050;
+    --border: #1c1c1c;
+}
+
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+    transition:
+        background-color 0.35s ease,
+        color 0.35s ease,
+        border-color 0.35s ease !important;
+}
+
 html {
-  scroll-behavior: smooth;
+    scroll-behavior: smooth;
 }
 
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  width: 100vw;
-  height: 100vh;
-  
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+ul {
+    list-style: none;
 }
