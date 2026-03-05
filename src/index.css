@@ -5,13 +5,30 @@
 }
 
 :root {
-    --bg: #0c0c0c;
-    --text: #e8e8e8;
-    --text-muted: #505050;
-    --accent: #86efac;
-    --border: #1c1c1c;
+    /* light mode (default) */
+    --bg: #f7f7f5;
+    --bg-glass: rgba(247, 247, 245, 0.85);
+    --text: #111111;
+    --text-muted: #aaaaaa;
+    --accent: #16a34a;
+    --border: #e4e4e2;
     --font: 'Inter', system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+}
+
+[data-theme="dark"] {
+    --bg: #0c0c0c;
+    --bg-glass: rgba(12, 12, 12, 0.85);
+    --text: #e8e8e8;
+    --text-muted: #505050;
+    --border: #1c1c1c;
+}
+
+/* applied only during theme switch to avoid fighting hover/animation transitions */
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+    transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease !important;
 }
 
 html {
