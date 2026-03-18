@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import "./Home.css";
 
@@ -50,6 +50,15 @@ function Home({ overlayDone }) {
     const nameRef = useRef(null);
     const leviRef = useRef(null);
     const readyRef = useRef(false);
+    const [listening, setListening] = useState({ current: null, recent: [] });
+    const [recommendInput, setRecommendInput] = useState("");
+    const [searchResults, setSearchResults] = useState([]);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
+    const [recommendStatus, setRecommendStatus] = useState(null);
+    const [addedTrack, setAddedTrack] = useState(null);
+    const searchTimerRef = useRef(null);
+    const dropdownRef = useRef(null);
 
     useEffect(() => {
         readyRef.current = overlayDone;
@@ -86,6 +95,81 @@ function Home({ overlayDone }) {
             window.removeEventListener("mousemove", move);
             window.removeEventListener("mouseleave", leave);
         };
+    }, []);
+
+    useEffect(() => {
+        const fetchNowPlaying = () =>
+            fetch("/api/now-playing")
+                .then((r) => r.json())
+                .then(setListening)
+                .catch(() => {});
+        fetchNowPlaying();
+        const id = setInterval(fetchNowPlaying, 30000);
+        return () => clearInterval(id);
+    }, []);
+
+    const handleInputChange = (e) => {
+        const val = e.target.value;
+        setRecommendInput(val);
+        setRecommendStatus(null);
+        clearTimeout(searchTimerRef.current);
+        if (!val.trim()) {
+            setSearchResults([]);
+            setShowDropdown(false);
+            return;
+        }
+        setIsSearching(true);
+        searchTimerRef.current = setTimeout(async () => {
+            try {
+                const res = await fetch(
+                    `/api/search-songs?q=${encodeURIComponent(val)}`,
+                );
+                const data = await res.json();
+                setSearchResults(data.tracks ?? []);
+                setShowDropdown(true);
+            } catch {
+                setSearchResults([]);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 350);
+    };
+
+    const handleSelectTrack = async (track) => {
+        setShowDropdown(false);
+        setRecommendInput("");
+        setRecommendStatus("loading");
+        setAddedTrack(null);
+        try {
+            const res = await fetch("/api/add-song", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    uri: track.uri,
+                    name: track.name,
+                    artist: track.artist,
+                }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setRecommendStatus("success");
+                setAddedTrack(data.track);
+            } else {
+                setRecommendStatus("error");
+            }
+        } catch {
+            setRecommendStatus("error");
+        }
+    };
+
+    useEffect(() => {
+        const handleClick = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
     }, []);
 
     useEffect(() => {
@@ -153,11 +237,11 @@ function Home({ overlayDone }) {
                         </Link>
                         <div className="hero-links">
                             <a
-                                href="https://github.com/ticusb"
+                                href="https://git.ticusb.com/repos"
                                 target="_blank"
                                 rel="noreferrer"
                             >
-                                github &#8599;
+                                git &#8599;
                             </a>
                             <a
                                 href="https://linkedin.com/in/ticus"
@@ -236,6 +320,129 @@ function Home({ overlayDone }) {
                         </li>
                     ))}
                 </ul>
+            </section>
+
+            <section className="spotify-section home-reveal">
+                <div className="spotify-grid">
+                    <div className="spotify-now">
+                        <span className="section-label">listening</span>
+                        {listening.current && (
+                            <a
+                                href={listening.current.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="now-playing-card"
+                            >
+                                <div className="now-playing-badge">
+                                    <span className="now-playing-dot" />
+                                </div>
+                                <img
+                                    src={listening.current.albumArt}
+                                    alt={listening.current.album}
+                                    className="now-playing-art"
+                                />
+                                <div className="now-playing-info">
+                                    <p className="now-playing-title">
+                                        {listening.current.title}
+                                    </p>
+                                    <p className="now-playing-artist">
+                                        {listening.current.artist}
+                                    </p>
+                                </div>
+                            </a>
+                        )}
+                        {listening.recent.length > 0 && (
+                            <ul className="recent-list">
+                                {listening.recent.map((track, i) => (
+                                    <li key={i}>
+                                        <a
+                                            href={track.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="recent-track"
+                                        >
+                                            <img
+                                                src={track.albumArt}
+                                                alt={track.album}
+                                                className="recent-art"
+                                            />
+                                            <div className="recent-info">
+                                                <span className="recent-title">
+                                                    {track.title}
+                                                </span>
+                                                <span className="recent-artist">
+                                                    {track.artist}
+                                                </span>
+                                            </div>
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                    <div className="spotify-recommend">
+                        <span className="section-label">recommend a song</span>
+                        <div className="recommend-wrap" ref={dropdownRef}>
+                            <div className="recommend-form">
+                                <input
+                                    type="text"
+                                    value={recommendInput}
+                                    onChange={handleInputChange}
+                                    onFocus={() =>
+                                        searchResults.length > 0 &&
+                                        setShowDropdown(true)
+                                    }
+                                    placeholder="search a song or artist"
+                                    className={`recommend-input${isSearching ? " searching" : ""}`}
+                                    autoComplete="off"
+                                />
+                            </div>
+                            {showDropdown && searchResults.length > 0 && (
+                                <ul className="recommend-dropdown">
+                                    {searchResults.map((track) => (
+                                        <li
+                                            key={track.uri}
+                                            className="recommend-result"
+                                            onMouseDown={() =>
+                                                handleSelectTrack(track)
+                                            }
+                                        >
+                                            {track.albumArt && (
+                                                <img
+                                                    src={track.albumArt}
+                                                    alt=""
+                                                    className="result-art"
+                                                />
+                                            )}
+                                            <div className="result-info">
+                                                <span className="result-name">
+                                                    {track.name}
+                                                </span>
+                                                <span className="result-artist">
+                                                    {track.artist}
+                                                </span>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                        {recommendStatus === "success" && addedTrack && (
+                            <p className="recommend-feedback">
+                                added{" "}
+                                <span className="recommend-track">
+                                    {addedTrack.name}
+                                </span>{" "}
+                                by {addedTrack.artist} to folio recs
+                            </p>
+                        )}
+                        {recommendStatus === "error" && (
+                            <p className="recommend-feedback recommend-error">
+                                couldn&apos;t find that track
+                            </p>
+                        )}
+                    </div>
+                </div>
             </section>
         </main>
     );

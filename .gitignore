@@ -47,3 +47,5 @@ yarn-error.log*
 
 # Claude
 CLAUDE.md
+.vercel
+.env*.local

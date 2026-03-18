@@ -386,6 +386,264 @@
     transition: color 0.3s;
 }
 
+.spotify-section {
+    border-top: 1px solid var(--border);
+    padding: 6rem 3rem;
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+.spotify-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+}
+
+.now-playing-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    transition: opacity 0.2s;
+}
+
+.now-playing-card:hover {
+    opacity: 0.75;
+}
+
+.now-playing-badge {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.now-playing-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: block;
+    animation: dotPulse 2.2s ease infinite;
+    transition: background 0.3s;
+}
+
+.now-playing-art {
+    width: 52px;
+    height: 52px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    object-fit: cover;
+}
+
+.now-playing-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.now-playing-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.now-playing-artist {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.recent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.recent-track {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: opacity 0.2s;
+}
+
+.recent-track:hover {
+    opacity: 0.65;
+}
+
+.recent-art {
+    width: 36px;
+    height: 36px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    object-fit: cover;
+}
+
+.recent-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.recent-title {
+    font-size: 0.82rem;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.recent-artist {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.recommend-wrap {
+    position: relative;
+}
+
+.recommend-form {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.recommend-input {
+    flex: 1;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.55rem 0.8rem;
+    font-size: 0.82rem;
+    font-family: var(--font-mono);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    min-width: 0;
+}
+
+.recommend-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.recommend-input:focus {
+    border-color: var(--accent);
+}
+
+.recommend-input.searching {
+    animation: inputPulse 0.8s ease infinite;
+}
+
+@keyframes inputPulse {
+    0%, 100% { border-color: var(--border); }
+    50% { border-color: var(--accent); }
+}
+
+.recommend-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition:
+        border-color 0.2s,
+        color 0.2s;
+}
+
+.recommend-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.recommend-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.recommend-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    z-index: 10;
+}
+
+.recommend-result {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.recommend-result:hover {
+    background: var(--border);
+}
+
+.result-art {
+    width: 36px;
+    height: 36px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    object-fit: cover;
+}
+
+.result-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.result-name {
+    font-size: 0.82rem;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.result-artist {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.recommend-feedback {
+    margin-top: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+}
+
+.recommend-track {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.recommend-error {
+    color: #e05a5a;
+}
+
 @keyframes fadeUp {
     from {
         opacity: 0;
@@ -474,6 +732,15 @@
     }
 
     .about-grid {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+    }
+
+    .spotify-section {
+        padding: 4rem 1.5rem;
+    }
+
+    .spotify-grid {
         grid-template-columns: 1fr;
         gap: 3rem;
     }
