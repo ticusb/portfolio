@@ -2,14 +2,14 @@ import { getAccessToken } from "./_lib/spotify.js";
 
 const formatTrack = (item) => ({
     title: item.name,
-    artist: item.artists.map((a) => a.name).join(", "),
+    artist: item.artists?.map((a) => a.name).join(", ") ?? "",
     album: item.album.name,
     albumArt: item.album.images[0]?.url,
     url: item.external_urls.spotify,
 });
 
 export default async function handler(req, res) {
-    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Origin", "https://ticusb.com");
 
     const token = await getAccessToken();
     const headers = { Authorization: `Bearer ${token}` };

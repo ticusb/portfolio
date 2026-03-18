@@ -1,5 +1,6 @@
-import { useEffect, useState, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useClickOutside } from "../hooks/useClickOutside";
 import "./NavBar.css";
 
 const PRESETS = [
@@ -23,15 +24,8 @@ function NavBar({ theme, toggleTheme, accent, setAccent }) {
         return () => window.removeEventListener("scroll", onScroll);
     }, []);
 
-    useEffect(() => {
-        const onClickOutside = (e) => {
-            if (pickerRef.current && !pickerRef.current.contains(e.target)) {
-                setPickerOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", onClickOutside);
-        return () => document.removeEventListener("mousedown", onClickOutside);
-    }, []);
+    const closePicker = useCallback(() => setPickerOpen(false), []);
+    useClickOutside(pickerRef, closePicker);
 
     return (
         <nav className={`nav${scrolled ? " nav--scrolled" : ""}`}>

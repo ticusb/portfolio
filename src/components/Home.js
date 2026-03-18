@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { useReveal } from "../hooks/useReveal";
+import { useClickOutside } from "../hooks/useClickOutside";
 import "./Home.css";
 
 const STACK = [
@@ -103,9 +105,21 @@ function Home({ overlayDone }) {
                 .then((r) => r.json())
                 .then(setListening)
                 .catch(() => {});
+
         fetchNowPlaying();
-        const id = setInterval(fetchNowPlaying, 30000);
-        return () => clearInterval(id);
+        const id = setInterval(() => {
+            if (!document.hidden) fetchNowPlaying();
+        }, 30000);
+
+        const onVisible = () => {
+            if (!document.hidden) fetchNowPlaying();
+        };
+        document.addEventListener("visibilitychange", onVisible);
+
+        return () => {
+            clearInterval(id);
+            document.removeEventListener("visibilitychange", onVisible);
+        };
     }, []);
 
     const handleInputChange = (e) => {
@@ -116,6 +130,7 @@ function Home({ overlayDone }) {
         if (!val.trim()) {
             setSearchResults([]);
             setShowDropdown(false);
+            setIsSearching(false);
             return;
         }
         setIsSearching(true);
@@ -154,6 +169,7 @@ function Home({ overlayDone }) {
             if (res.ok) {
                 setRecommendStatus("success");
                 setAddedTrack(data.track);
+                setTimeout(() => setRecommendStatus(null), 4000);
             } else {
                 setRecommendStatus("error");
             }
@@ -162,29 +178,9 @@ function Home({ overlayDone }) {
         }
     };
 
-    useEffect(() => {
-        const handleClick = (e) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-                setShowDropdown(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClick);
-        return () => document.removeEventListener("mousedown", handleClick);
-    }, []);
-
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) =>
-                entries.forEach((e) => {
-                    if (e.isIntersecting) e.target.classList.add("visible");
-                }),
-            { threshold: 0.1 },
-        );
-        document
-            .querySelectorAll(".home-reveal")
-            .forEach((el) => observer.observe(el));
-        return () => observer.disconnect();
-    }, []);
+    const closeDropdown = useCallback(() => setShowDropdown(false), []);
+    useClickOutside(dropdownRef, closeDropdown);
+    useReveal(".home-reveal");
 
     return (
         <main className="home">
@@ -353,8 +349,8 @@ function Home({ overlayDone }) {
                         )}
                         {listening.recent.length > 0 && (
                             <ul className="recent-list">
-                                {listening.recent.map((track, i) => (
-                                    <li key={i}>
+                                {listening.recent.map((track) => (
+                                    <li key={track.url}>
                                         <a
                                             href={track.url}
                                             target="_blank"

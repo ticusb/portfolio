@@ -1,12 +1,23 @@
 import { getAccessToken } from "./_lib/spotify.js";
 
+const counts = new Map();
+
 export default async function handler(req, res) {
-    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Origin", "https://ticusb.com");
 
     if (req.method !== "POST") return res.status(405).end();
 
+    const ip = req.headers["x-forwarded-for"] ?? "unknown";
+    const count = counts.get(ip) ?? 0;
+    if (count >= 5) return res.status(429).json({ error: "too many requests" });
+    counts.set(ip, count + 1);
+    setTimeout(() => counts.set(ip, (counts.get(ip) ?? 1) - 1), 60_000);
+
     const { uri, name, artist } = req.body;
     if (!uri?.trim()) return res.status(400).json({ error: "uri required" });
+    if (!/^spotify:track:[A-Za-z0-9]+$/.test(uri)) {
+        return res.status(400).json({ error: "invalid uri" });
+    }
 
     const token = await getAccessToken();
 

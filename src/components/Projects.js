@@ -1,21 +1,9 @@
-import { useEffect } from "react";
 import projects from "../data/projects";
+import { useReveal } from "../hooks/useReveal";
 import "./Projects.css";
 
 function Projects() {
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) =>
-                entries.forEach((e) => {
-                    if (e.isIntersecting) e.target.classList.add("visible");
-                }),
-            { threshold: 0.1 },
-        );
-        document
-            .querySelectorAll(".project-section")
-            .forEach((el) => observer.observe(el));
-        return () => observer.disconnect();
-    }, []);
+    useReveal(".project-section");
 
     return (
         <div className="projects-page">
