@@ -33,7 +33,7 @@ function NavBar({ theme, toggleTheme, accent, setAccent }) {
                 lb
             </Link>
             <div className="nav-right">
-                <ul className="nav-links">
+                <ul className="nav-links" role="list">
                     <li>
                         <Link
                             to="/"
@@ -54,6 +54,16 @@ function NavBar({ theme, toggleTheme, accent, setAccent }) {
                             }
                         >
                             projects
+                        </Link>
+                    </li>
+                    <li>
+                        <Link
+                            to="/art"
+                            className={
+                                location.pathname === "/art" ? "active" : ""
+                            }
+                        >
+                            art
                         </Link>
                     </li>
                 </ul>

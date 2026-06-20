@@ -5,10 +5,11 @@
     border-radius: 50%;
     background: radial-gradient(circle, var(--accent) 0%, transparent 65%);
     pointer-events: none;
-    transform: translate(-50%, -50%);
+    top: 0;
+    left: 0;
     z-index: 0;
     opacity: 0.08;
-    will-change: left, top;
+    will-change: transform;
     transition: opacity 0.3s;
 }
 

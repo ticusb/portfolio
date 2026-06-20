@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import Home from "./components/Home";
 import Projects from "./components/Projects";
+import Art from "./components/Art";
 import NavBar from "./components/NavBar";
 import CursorGlow from "./components/CursorGlow";
 import LandingOverlay from "./components/LandingOverlay";
@@ -32,7 +33,11 @@ const KONAMI_SEQ = [
 function App() {
     const [overlayDone, setOverlayDone] = useState(false);
     const [theme, setTheme] = useState(
-        () => localStorage.getItem("theme") || "light",
+        () =>
+            localStorage.getItem("theme") ||
+            (window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light"),
     );
     const [accent, setAccent] = useState(
         () => localStorage.getItem("accent") || DEFAULT_ACCENT,
@@ -128,6 +133,7 @@ function App() {
             <Routes>
                 <Route path="/" element={<Home overlayDone={overlayDone} />} />
                 <Route path="/projects" element={<Projects />} />
+                <Route path="/art" element={<Art />} />
             </Routes>
         </>
     );

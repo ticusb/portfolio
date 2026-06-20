@@ -6,7 +6,7 @@ function Projects() {
     useReveal(".project-section");
 
     return (
-        <div className="projects-page">
+        <main className="projects-page">
             <header className="projects-header">
                 <span className="projects-label">selected work</span>
                 <h1 className="projects-title">Projects</h1>
@@ -52,7 +52,7 @@ function Projects() {
                     </div>
                 </div>
             ))}
-        </div>
+        </main>
     );
 }
 

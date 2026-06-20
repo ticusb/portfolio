@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import "./LandingOverlay.css";
 
 const MESSAGES = [
@@ -12,18 +12,27 @@ const LINE_PAUSE = 800;
 const END_PAUSE = 1500;
 const EXIT_FADE_MS = 750;
 
+const reducedMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+).matches;
+
 function LandingOverlay({ onDone }) {
-    const [completed, setCompleted] = useState([]);
+    const [completed, setCompleted] = useState(reducedMotion ? MESSAGES : []);
     const [current, setCurrent] = useState("");
     const [msgIndex, setMsgIndex] = useState(0);
-    const [allDone, setAllDone] = useState(false);
+    const [allDone, setAllDone] = useState(reducedMotion);
     const [exiting, setExiting] = useState(false);
     const [pieceEgg, setPieceEgg] = useState(false);
     const onDoneRef = useRef(onDone);
+    const skipRef = useRef(null);
 
     useEffect(() => {
         onDoneRef.current = onDone;
     });
+
+    useEffect(() => {
+        skipRef.current?.focus();
+    }, []);
 
     useEffect(() => {
         if (!exiting) return;
@@ -33,7 +42,10 @@ function LandingOverlay({ onDone }) {
 
     useEffect(() => {
         if (!allDone) return;
-        const t = setTimeout(() => setExiting(true), END_PAUSE);
+        const t = setTimeout(
+            () => setExiting(true),
+            reducedMotion ? 800 : END_PAUSE,
+        );
         return () => clearTimeout(t);
     }, [allDone]);
 
@@ -44,7 +56,7 @@ function LandingOverlay({ onDone }) {
     }, [pieceEgg]);
 
     useEffect(() => {
-        if (exiting || allDone) return;
+        if (reducedMotion || exiting || allDone) return;
         const msg = MESSAGES[msgIndex];
 
         if (current.length < msg.length) {
@@ -68,6 +80,15 @@ function LandingOverlay({ onDone }) {
         return () => clearTimeout(t);
     }, [current, msgIndex, exiting, allDone]);
 
+    const dismiss = () => !exiting && setExiting(true);
+
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter" || e.key === " " || e.key === "Escape") {
+            e.preventDefault();
+            dismiss();
+        }
+    };
+
     const renderCompletedLine = (line, i) => {
         if (i !== 1) return line;
         const idx = line.indexOf("one piece");
@@ -77,9 +98,17 @@ function LandingOverlay({ onDone }) {
                 {line.slice(0, idx)}
                 <span
                     className="lo-piece"
+                    role="button"
+                    tabIndex="0"
                     onClick={(e) => {
                         e.stopPropagation();
                         !pieceEgg && setPieceEgg(true);
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.stopPropagation();
+                            !pieceEgg && setPieceEgg(true);
+                        }
                     }}
                 >
                     {line.slice(idx, idx + 9)}
@@ -92,8 +121,10 @@ function LandingOverlay({ onDone }) {
     return (
         <div
             className={`lo${exiting ? " lo--exit" : ""}`}
-            onClick={() => !exiting && setExiting(true)}
-            role="presentation"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Site intro"
+            onClick={dismiss}
         >
             <div className="lo-terminal" onClick={(e) => e.stopPropagation()}>
                 <div className="lo-header">
@@ -104,22 +135,26 @@ function LandingOverlay({ onDone }) {
 
                 <div className="lo-lines">
                     {completed.map((line, i) => (
-                        <div className="lo-line lo-line--done" key={i}>
-                            <span className="lo-prompt" aria-hidden="true">
-                                &gt;
-                            </span>
-                            <span>{renderCompletedLine(line, i)}</span>
-                        </div>
+                        <Fragment key={line}>
+                            <div className="lo-line lo-line--done">
+                                <span className="lo-prompt" aria-hidden="true">
+                                    &gt;
+                                </span>
+                                <span>{renderCompletedLine(line, i)}</span>
+                            </div>
+                            {i === 1 && pieceEgg && (
+                                <div className="lo-line lo-line--egg">
+                                    <span
+                                        className="lo-prompt"
+                                        aria-hidden="true"
+                                    >
+                                        !
+                                    </span>
+                                    <span>THE ONE PIECE IS REAL!! 🏴‍☠️</span>
+                                </div>
+                            )}
+                        </Fragment>
                     ))}
-
-                    {pieceEgg && (
-                        <div className="lo-line lo-line--egg">
-                            <span className="lo-prompt" aria-hidden="true">
-                                !
-                            </span>
-                            <span>THE ONE PIECE IS REAL!! 🏴‍☠️</span>
-                        </div>
-                    )}
 
                     {!allDone && (
                         <div className="lo-line">
@@ -142,7 +177,15 @@ function LandingOverlay({ onDone }) {
                 </div>
             </div>
 
-            <span className="lo-skip">click to skip</span>
+            <button
+                ref={skipRef}
+                className="lo-skip-btn"
+                onClick={dismiss}
+                onKeyDown={handleKeyDown}
+                aria-label="Skip intro"
+            >
+                <span aria-hidden="true">click to skip</span>
+            </button>
         </div>
     );
 }

@@ -15,12 +15,12 @@ const projects = [
         live: null,
     },
     {
-        name: "Trophe's Joy Joy",
+        name: "this-is-art",
         tagline:
-            "Full-stack CBD e-commerce — product catalog, variant filtering, cart, and multi-step checkout on a serverless AWS backend with NMI payment processing.",
-        tech: ["Next.js", "React", "Tailwind", "AWS Lambda", "DynamoDB", "NMI"],
-        github: "https://github.com/ticusb/trophes-joy",
-        live: null,
+            "An infinite, drag-to-pan gallery of my artwork — momentum physics, hover tilt, viewport culling, and keyboard/touch navigation across an endless grid sourced from Google Drive.",
+        tech: ["Next.js", "React", "Tailwind", "Google Drive API"],
+        github: null,
+        live: "https://art.ticusb.com",
     },
     {
         name: "Rust Web Browser",

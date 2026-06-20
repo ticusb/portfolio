@@ -37,11 +37,6 @@ const BUILDING = [
         tech: "React Native · Fastify · OpenAI",
     },
     {
-        name: "Trophe's Joy",
-        desc: "Full-stack CBD e-commerce with serverless AWS backend and NMI payment processing.",
-        tech: "Next.js · AWS Lambda · DynamoDB",
-    },
-    {
         name: "Homelab Server",
         desc: "Bare-metal Arch Linux server — reverse proxy, WireGuard VPN, Pi-hole DNS, n8n automation.",
         tech: "Docker · Nginx · WireGuard",
@@ -49,14 +44,25 @@ const BUILDING = [
 ];
 
 function Home({ overlayDone }) {
+    const heroWrapperRef = useRef(null);
     const nameRef = useRef(null);
     const leviRef = useRef(null);
+    const pronFullRef = useRef(null);
+    const pronShortRef = useRef(null);
+    const scrollHintRef = useRef(null);
     const readyRef = useRef(false);
+    const firstLineRef = useRef(null);
+    const leviWidthRef = useRef(400);
+    const reduceMotionRef = useRef(
+        typeof window !== "undefined" &&
+            !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
+    );
     const [listening, setListening] = useState({ current: null, recent: [] });
     const [recommendInput, setRecommendInput] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [showDropdown, setShowDropdown] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
+    const [selectedIndex, setSelectedIndex] = useState(-1);
     const [recommendStatus, setRecommendStatus] = useState(null);
     const [addedTrack, setAddedTrack] = useState(null);
     const searchTimerRef = useRef(null);
@@ -66,38 +72,59 @@ function Home({ overlayDone }) {
         readyRef.current = overlayDone;
     }, [overlayDone]);
 
-    useEffect(() => {
-        const move = (e) => {
-            if (!readyRef.current || !nameRef.current || !leviRef.current)
-                return;
-            const rect = nameRef.current.getBoundingClientRect();
-            const dx = Math.max(
-                rect.left - e.clientX,
-                0,
-                e.clientX - rect.right,
-            );
-            const dy = Math.max(
-                rect.top - e.clientY,
-                0,
-                e.clientY - rect.bottom,
-            );
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const progress = Math.max(0, 1 - dist / 180) ** 1.8;
-            leviRef.current.style.maxWidth = `${progress * 400}px`;
-            leviRef.current.style.opacity = String(progress);
-        };
-        const leave = () => {
-            if (!leviRef.current) return;
-            leviRef.current.style.maxWidth = "0px";
-            leviRef.current.style.opacity = "0";
-        };
-        window.addEventListener("mousemove", move);
-        window.addEventListener("mouseleave", leave);
-        return () => {
-            window.removeEventListener("mousemove", move);
-            window.removeEventListener("mouseleave", leave);
-        };
+    const animateName = useCallback((p) => {
+        if (
+            !firstLineRef.current ||
+            !leviRef.current ||
+            !pronFullRef.current ||
+            !pronShortRef.current
+        )
+            return;
+
+        firstLineRef.current.style.transform = `translateX(${(-leviWidthRef.current * p).toFixed(1)}px)`;
+        leviRef.current.style.opacity = String(Math.max(0, 1 - p * 1.5));
+
+        pronFullRef.current.style.opacity = String(1 - p);
+        pronFullRef.current.style.transform = `translateX(${(-12 * p).toFixed(1)}px)`;
+        pronShortRef.current.style.opacity = String(p);
+        pronShortRef.current.style.transform = `translateX(${(12 * (1 - p)).toFixed(1)}px)`;
     }, []);
+
+    useEffect(() => {
+        readyRef.current = overlayDone;
+        if (overlayDone && !reduceMotionRef.current) animateName(0);
+    }, [overlayDone, animateName]);
+
+    useEffect(() => {
+        const measure = () => {
+            if (!leviRef.current) return;
+            leviWidthRef.current =
+                leviRef.current.getBoundingClientRect().width;
+        };
+        measure();
+        if (document.fonts?.ready) document.fonts.ready.then(measure);
+        window.addEventListener("resize", measure);
+        return () => window.removeEventListener("resize", measure);
+    }, []);
+
+    useEffect(() => {
+        if (reduceMotionRef.current) return;
+        const onScroll = () => {
+            if (!readyRef.current || !heroWrapperRef.current) return;
+            const scrollable = heroWrapperRef.current.offsetHeight - window.innerHeight;
+            const raw = Math.min(1, Math.max(0, window.scrollY / scrollable));
+            const p = Math.min(1, raw / 0.7);
+            const eased = 1 - Math.pow(1 - p, 2);
+            animateName(eased);
+
+            if (scrollHintRef.current) {
+                const hint = 1 - Math.min(1, Math.max(0, (raw - 0.7) / 0.15));
+                scrollHintRef.current.style.opacity = String(hint);
+            }
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+    }, [animateName]);
 
     useEffect(() => {
         const fetchNowPlaying = () =>
@@ -134,6 +161,7 @@ function Home({ overlayDone }) {
             return;
         }
         setIsSearching(true);
+        setSelectedIndex(-1);
         searchTimerRef.current = setTimeout(async () => {
             try {
                 const res = await fetch(
@@ -150,8 +178,26 @@ function Home({ overlayDone }) {
         }, 350);
     };
 
+    const handleInputKeyDown = (e) => {
+        if (!showDropdown || searchResults.length === 0) return;
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setSelectedIndex((i) => Math.min(i + 1, searchResults.length - 1));
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setSelectedIndex((i) => Math.max(i - 1, 0));
+        } else if (e.key === "Enter" && selectedIndex >= 0) {
+            e.preventDefault();
+            handleSelectTrack(searchResults[selectedIndex]);
+        } else if (e.key === "Escape") {
+            setShowDropdown(false);
+            setSelectedIndex(-1);
+        }
+    };
+
     const handleSelectTrack = async (track) => {
         setShowDropdown(false);
+        setSelectedIndex(-1);
         setRecommendInput("");
         setRecommendStatus("loading");
         setAddedTrack(null);
@@ -184,37 +230,37 @@ function Home({ overlayDone }) {
 
     return (
         <main className="home">
+            <div className="hero-scroll-container" ref={heroWrapperRef}>
             <section className="hero">
                 <div className="hero-inner">
                     <span className="hero-label">software engineer</span>
-                    <div
-                        className={`hero-name-wrap${overlayDone ? " ready" : ""}`}
-                    >
+                    <div className="hero-name-wrap">
                         <h1
                             ref={nameRef}
                             className="hero-name"
                             aria-label="Leviticus Brandt"
                         >
-                            <span
-                                ref={leviRef}
-                                className="hero-levi"
-                                aria-hidden="true"
-                            >
-                                Levi
+                            <span className="hero-line">
+                                <span
+                                    ref={firstLineRef}
+                                    className="hero-first"
+                                    aria-hidden="true"
+                                >
+                                    <span ref={leviRef} className="hero-levi">
+                                        Levi
+                                    </span>
+                                    <span className="hero-ticus">ticus</span>
+                                </span>
                             </span>
-                            <span className="hero-t-wrap" aria-hidden="true">
-                                <span className="hero-T-up">T</span>
-                                <span className="hero-icus">icus</span>
-                                <span className="hero-T-lo">t</span>
+                            <span className="hero-last" aria-hidden="true">
+                                Brandt
                             </span>
-                            <br />
-                            Brandt
                         </h1>
                         <p className="hero-pronunciation">
-                            <span className="hero-pron-full" aria-hidden="true">
+                            <span ref={pronFullRef} className="hero-pron-full" aria-hidden="true">
                                 /&nbsp;leh&nbsp;&middot;&nbsp;vit&nbsp;&middot;&nbsp;ih&nbsp;&middot;&nbsp;kus&nbsp;/
                             </span>
-                            <span className="hero-pron-short">
+                            <span ref={pronShortRef} className="hero-pron-short">
                                 /&nbsp;tee&nbsp;&middot;&nbsp;kus&nbsp;/
                             </span>
                         </p>
@@ -252,11 +298,12 @@ function Home({ overlayDone }) {
                         </div>
                     </div>
                 </div>
-                <div className="scroll-hint" aria-hidden="true">
+                <div ref={scrollHintRef} className="scroll-hint" aria-hidden="true">
                     <span>scroll</span>
                     <div className="scroll-line" />
                 </div>
             </section>
+            </div>
 
             <section className="about-section home-reveal">
                 <div className="about-grid">
@@ -304,7 +351,7 @@ function Home({ overlayDone }) {
 
             <section className="building-section home-reveal">
                 <span className="section-label">currently building</span>
-                <ul className="building-list">
+                <ul className="building-list" role="list">
                     {BUILDING.map(({ name, desc, tech }) => (
                         <li className="building-item" key={name}>
                             <div className="building-dot" aria-hidden="true" />
@@ -348,7 +395,7 @@ function Home({ overlayDone }) {
                             </a>
                         )}
                         {listening.recent.length > 0 && (
-                            <ul className="recent-list">
+                            <ul className="recent-list" role="list">
                                 {listening.recent.map((track) => (
                                     <li key={track.url}>
                                         <a
@@ -382,8 +429,18 @@ function Home({ overlayDone }) {
                             <div className="recommend-form">
                                 <input
                                     type="text"
+                                    role="combobox"
+                                    aria-expanded={showDropdown}
+                                    aria-controls="song-results"
+                                    aria-autocomplete="list"
+                                    aria-activedescendant={
+                                        selectedIndex >= 0
+                                            ? `result-${selectedIndex}`
+                                            : undefined
+                                    }
                                     value={recommendInput}
                                     onChange={handleInputChange}
+                                    onKeyDown={handleInputKeyDown}
                                     onFocus={() =>
                                         searchResults.length > 0 &&
                                         setShowDropdown(true)
@@ -394,13 +451,23 @@ function Home({ overlayDone }) {
                                 />
                             </div>
                             {showDropdown && searchResults.length > 0 && (
-                                <ul className="recommend-dropdown">
-                                    {searchResults.map((track) => (
+                                <ul
+                                    className="recommend-dropdown"
+                                    id="song-results"
+                                    role="listbox"
+                                >
+                                    {searchResults.map((track, i) => (
                                         <li
                                             key={track.uri}
-                                            className="recommend-result"
+                                            id={`result-${i}`}
+                                            className={`recommend-result${selectedIndex === i ? " recommend-result--active" : ""}`}
+                                            role="option"
+                                            aria-selected={selectedIndex === i}
                                             onMouseDown={() =>
                                                 handleSelectTrack(track)
+                                            }
+                                            onMouseEnter={() =>
+                                                setSelectedIndex(i)
                                             }
                                         >
                                             {track.albumArt && (
