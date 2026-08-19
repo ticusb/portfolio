@@ -2,6 +2,10 @@
     position: fixed;
     inset: 0;
     background: var(--bg);
+    /* Safe-area insets only resolve on the top-level document, never inside the
+       iframe — so the gallery's own bottom chrome can't dodge the home
+       indicator on its own. Reserve the room out here instead. */
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
 .art-frame {

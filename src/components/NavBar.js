@@ -27,8 +27,13 @@ function NavBar({ theme, toggleTheme, accent, setAccent }) {
     const closePicker = useCallback(() => setPickerOpen(false), []);
     useClickOutside(pickerRef, closePicker);
 
+    // /art is a fixed, full-bleed iframe, so the document never scrolls and the
+    // nav would stay transparent forever — sitting unreadable on top of the
+    // gallery photos. Give that route the solid treatment from the start.
+    const solid = scrolled || location.pathname === "/art";
+
     return (
-        <nav className={`nav${scrolled ? " nav--scrolled" : ""}`}>
+        <nav className={`nav${solid ? " nav--scrolled" : ""}`}>
             <Link to="/" className="nav-brand">
                 lb
             </Link>
