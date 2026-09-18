@@ -1,4 +1,5 @@
 import { getAccessToken } from "./_lib/spotify.js";
+import { guard } from "./_lib/guard.js";
 
 const formatTrack = (item) => ({
     title: item.name,
@@ -9,7 +10,15 @@ const formatTrack = (item) => ({
 });
 
 export default async function handler(req, res) {
-    res.setHeader("Access-Control-Allow-Origin", "https://ticusb.com");
+    const ok = await guard(req, res, {
+        name: "now-playing",
+        method: "GET",
+        window: 60,
+        max: 30,
+        globalWindow: 3600,
+        globalMax: 2000,
+    });
+    if (!ok) return;
 
     const token = await getAccessToken();
     const headers = { Authorization: `Bearer ${token}` };

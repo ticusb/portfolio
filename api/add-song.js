@@ -1,21 +1,21 @@
 import { getAccessToken } from "./_lib/spotify.js";
-
-const counts = new Map();
+import { guard } from "./_lib/guard.js";
 
 export default async function handler(req, res) {
-    res.setHeader("Access-Control-Allow-Origin", "https://ticusb.com");
+    const ok = await guard(req, res, {
+        name: "add-song",
+        method: "POST",
+        window: 3600,
+        max: 5,
+        globalWindow: 86400,
+        globalMax: 40,
+        requireOrigin: true,
+    });
+    if (!ok) return;
 
-    if (req.method !== "POST") return res.status(405).end();
-
-    const ip = req.headers["x-forwarded-for"] ?? "unknown";
-    const count = counts.get(ip) ?? 0;
-    if (count >= 5) return res.status(429).json({ error: "too many requests" });
-    counts.set(ip, count + 1);
-    setTimeout(() => counts.set(ip, (counts.get(ip) ?? 1) - 1), 60_000);
-
-    const { uri, name, artist } = req.body;
+    const { uri, name, artist } = req.body ?? {};
     if (!uri?.trim()) return res.status(400).json({ error: "uri required" });
-    if (!/^spotify:track:[A-Za-z0-9]+$/.test(uri)) {
+    if (!/^spotify:track:[A-Za-z0-9]{22}$/.test(uri)) {
         return res.status(400).json({ error: "invalid uri" });
     }
 

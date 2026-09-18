@@ -216,6 +216,8 @@ function Home({ overlayDone }) {
                 setRecommendStatus("success");
                 setAddedTrack(data.track);
                 setTimeout(() => setRecommendStatus(null), 4000);
+            } else if (res.status === 429) {
+                setRecommendStatus("ratelimit");
             } else {
                 setRecommendStatus("error");
             }
@@ -497,6 +499,11 @@ function Home({ overlayDone }) {
                                     {addedTrack.name}
                                 </span>{" "}
                                 by {addedTrack.artist} to folio recs
+                            </p>
+                        )}
+                        {recommendStatus === "ratelimit" && (
+                            <p className="recommend-feedback recommend-error">
+                                easy there &mdash; try again in a bit
                             </p>
                         )}
                         {recommendStatus === "error" && (
