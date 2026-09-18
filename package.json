@@ -7,14 +7,15 @@
         "gh-pages": "^5.0.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
-        "react-router-dom": "^6.15.0",
+        "react-router-dom": "^6.30.6",
         "react-scripts": "^5.0.1"
     },
     "scripts": {
         "start": "react-scripts start",
         "build": "react-scripts build",
         "predeploy": "npm run build",
-        "deploy": "gh-pages -b gh-pages -d build"
+        "deploy": "gh-pages -b gh-pages -d build",
+        "spotify:auth": "node scripts/spotify-auth.mjs"
     },
     "eslintConfig": {
         "extends": [
@@ -37,5 +38,11 @@
         ]
     },
     "author": "ticus",
-    "license": "ISC"
+    "license": "ISC",
+    "overrides": {
+        "@babel/traverse": "^7.28.4",
+        "form-data": "^3.0.4",
+        "shell-quote": "^1.10.0",
+        "websocket-driver": "^0.7.5"
+    }
 }
