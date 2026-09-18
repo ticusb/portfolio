@@ -1,0 +1,23 @@
+{
+  "rewrites": [
+    { "source": "/.env", "destination": "/api/honeypot?trap=env" },
+    { "source": "/.env.:suffix", "destination": "/api/honeypot?trap=env" },
+    { "source": "/.aws/:path*", "destination": "/api/honeypot?trap=env" },
+    { "source": "/.ssh/:path*", "destination": "/api/honeypot?trap=env" },
+    { "source": "/config.php", "destination": "/api/honeypot?trap=env" },
+    { "source": "/.git/:path*", "destination": "/api/honeypot?trap=git" },
+    { "source": "/wp-admin/:path*", "destination": "/api/honeypot?trap=wordpress" },
+    { "source": "/wp-admin", "destination": "/api/honeypot?trap=wordpress" },
+    { "source": "/wp-login.php", "destination": "/api/honeypot?trap=wordpress" },
+    { "source": "/wp-content/:path*", "destination": "/api/honeypot?trap=wordpress" },
+    { "source": "/wp-includes/:path*", "destination": "/api/honeypot?trap=wordpress" },
+    { "source": "/wordpress/:path*", "destination": "/api/honeypot?trap=wordpress" },
+    { "source": "/xmlrpc.php", "destination": "/api/honeypot?trap=wordpress" },
+    { "source": "/admin", "destination": "/api/honeypot?trap=admin" },
+    { "source": "/admin/:path*", "destination": "/api/honeypot?trap=admin" },
+    { "source": "/administrator/:path*", "destination": "/api/honeypot?trap=admin" },
+    { "source": "/phpmyadmin/:path*", "destination": "/api/honeypot?trap=admin" },
+    { "source": "/cpanel", "destination": "/api/honeypot?trap=admin" },
+    { "source": "/vendor/:path*", "destination": "/api/honeypot?trap=admin" }
+  ]
+}
