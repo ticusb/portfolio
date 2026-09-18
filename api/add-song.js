@@ -23,7 +23,7 @@ export default async function handler(req, res) {
         const token = await getAccessToken();
 
         const addRes = await fetch(
-            `https://api.spotify.com/v1/playlists/${process.env.SPOTIFY_PLAYLIST_ID}/tracks`,
+            `https://api.spotify.com/v1/playlists/${process.env.SPOTIFY_PLAYLIST_ID}/items`,
             {
                 method: "POST",
                 headers: {
