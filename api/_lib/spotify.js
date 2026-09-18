@@ -15,7 +15,11 @@ export const getAccessToken = async () => {
         }),
     });
     const data = await res.json();
-    if (!data.access_token) throw new Error("Spotify token exchange failed");
+    if (!data.access_token) {
+        throw new Error(
+            `Spotify token exchange failed: ${res.status} ${data.error ?? ""} ${data.error_description ?? ""}`.trim(),
+        );
+    }
     cached = {
         token: data.access_token,
         expiresAt: Date.now() + (data.expires_in - 60) * 1000,
