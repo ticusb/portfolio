@@ -70,7 +70,7 @@ const authUrl = `https://accounts.spotify.com/authorize?${new URLSearchParams({
     redirect_uri: REDIRECT_URI,
     scope: SCOPES,
     state,
-    show_dialog: "true",
+    show_dialog: process.env.SPOTIFY_SHOW_DIALOG === "false" ? "false" : "true",
 })}`;
 
 console.log(`
@@ -101,8 +101,21 @@ const server = createServer(async (req, res) => {
 
     const error = url.searchParams.get("error");
     if (error) {
-        send(400, page("denied", error));
-        console.error(`\nSpotify returned: ${error}`);
+        send(400, page("spotify said no", `${error} - details in your terminal`));
+        console.error(`
+Spotify returned: ${error}
+
+Your client ID and redirect URI were accepted, so this failed at the
+consent step. In order of likelihood:
+
+  1. Development Mode allowlist. Dashboard -> your app -> User Management:
+     make sure the email of the Spotify account you logged in with is listed.
+  2. Stale Spotify session. Retry in a private window, or log out at
+     https://accounts.spotify.com first.
+  3. Transient Spotify error. Just run it again.
+  4. Retry without the forced consent screen:
+     SPOTIFY_SHOW_DIALOG=false npm run spotify:auth
+`);
         server.close();
         process.exitCode = 1;
         return;
