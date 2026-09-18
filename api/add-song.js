@@ -19,21 +19,28 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "invalid uri" });
     }
 
-    const token = await getAccessToken();
+    try {
+        const token = await getAccessToken();
 
-    const addRes = await fetch(
-        `https://api.spotify.com/v1/playlists/${process.env.SPOTIFY_PLAYLIST_ID}/tracks`,
-        {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
+        const addRes = await fetch(
+            `https://api.spotify.com/v1/playlists/${process.env.SPOTIFY_PLAYLIST_ID}/tracks`,
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ uris: [uri] }),
             },
-            body: JSON.stringify({ uris: [uri] }),
-        },
-    );
+        );
 
-    if (!addRes.ok) return res.status(500).json({ error: "Failed to add track" });
+        if (!addRes.ok) {
+            return res.status(502).json({ error: "Failed to add track" });
+        }
 
-    return res.status(200).json({ success: true, track: { name, artist } });
+        return res.status(200).json({ success: true, track: { name, artist } });
+    } catch (err) {
+        console.error("add-song unavailable:", err.message);
+        return res.status(503).json({ error: "temporarily unavailable" });
+    }
 }

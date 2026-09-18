@@ -16,25 +16,30 @@ export default async function handler(req, res) {
     if (!q?.trim()) return res.status(400).json({ error: "query required" });
     if (q.length > 100) return res.status(400).json({ error: "query too long" });
 
-    const token = await getAccessToken();
+    try {
+        const token = await getAccessToken();
 
-    const searchRes = await fetch(
-        `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=5`,
-        { headers: { Authorization: `Bearer ${token}` } },
-    );
+        const searchRes = await fetch(
+            `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=5`,
+            { headers: { Authorization: `Bearer ${token}` } },
+        );
 
-    if (!searchRes.ok) {
-        return res.status(502).json({ error: "search unavailable" });
+        if (!searchRes.ok) {
+            return res.status(502).json({ tracks: [], error: "search unavailable" });
+        }
+
+        const data = await searchRes.json();
+
+        const tracks = (data.tracks?.items ?? []).map((t) => ({
+            uri: t.uri,
+            name: t.name,
+            artist: t.artists.map((a) => a.name).join(", "),
+            albumArt: t.album.images[2]?.url ?? t.album.images[0]?.url,
+        }));
+
+        return res.status(200).json({ tracks });
+    } catch (err) {
+        console.error("search unavailable:", err.message);
+        return res.status(503).json({ tracks: [], error: "search unavailable" });
     }
-
-    const data = await searchRes.json();
-
-    const tracks = (data.tracks?.items ?? []).map((t) => ({
-        uri: t.uri,
-        name: t.name,
-        artist: t.artists.map((a) => a.name).join(", "),
-        albumArt: t.album.images[2]?.url ?? t.album.images[0]?.url,
-    }));
-
-    return res.status(200).json({ tracks });
 }
