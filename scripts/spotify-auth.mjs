@@ -9,12 +9,16 @@ const ENV_FILE =
     process.env.SPOTIFY_ENV_FILE ??
     new URL("../.env.local", import.meta.url).pathname;
 
-const SCOPES = [
-    "user-read-currently-playing",
-    "user-read-recently-played",
-    "playlist-modify-public",
-    "playlist-modify-private",
-].join(" ");
+const SCOPES =
+    process.env.SPOTIFY_SCOPES ??
+    [
+        "user-read-currently-playing",
+        "user-read-recently-played",
+        "playlist-modify-public",
+        "playlist-modify-private",
+    ].join(" ");
+
+const TOKEN_LIFETIME_DAYS = 180;
 
 const readEnv = () => {
     if (!existsSync(ENV_FILE)) return {};
@@ -154,7 +158,14 @@ consent step. In order of likelihood:
     const action = writeRefreshToken(data.refresh_token);
     send(200, page("done", "Refresh token saved. You can close this tab."));
 
+    const expires = new Date(Date.now() + TOKEN_LIFETIME_DAYS * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+
     console.log(`.env.local ${action}.
+
+Spotify expires this token after ${TOKEN_LIFETIME_DAYS} days: on or around ${expires}.
+Re-run npm run spotify:auth before then.
 
 New refresh token:
 
