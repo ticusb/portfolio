@@ -13,6 +13,7 @@
     "scripts": {
         "start": "react-scripts start",
         "build": "react-scripts build",
+        "lint": "eslint src",
         "test": "node --import ./tests/register-hooks.mjs --test",
         "predeploy": "npm run build",
         "deploy": "gh-pages -b gh-pages -d build",
@@ -23,7 +24,19 @@
             "react-app"
         ],
         "rules": {
-            "jsx-a11y/no-redundant-roles": "off"
+            "jsx-a11y/no-redundant-roles": "off",
+            "jsx-a11y/label-has-associated-control": "error",
+            "jsx-a11y/control-has-associated-label": [
+                "error",
+                {
+                    "ignoreElements": [
+                        "input",
+                        "textarea",
+                        "video",
+                        "summary"
+                    ]
+                }
+            ]
         }
     },
     "browserslist": {
