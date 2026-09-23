@@ -1,4 +1,5 @@
-import projects from "../data/projects";
+import { Link } from "react-router-dom";
+import projects, { getProjectPath } from "../data/projects";
 import { useReveal } from "../hooks/useReveal";
 import "./Projects.css";
 
@@ -6,13 +7,13 @@ function Projects() {
     useReveal(".project-section");
 
     return (
-        <main className="projects-page">
+        <main className="projects-page" id="main-content">
             <header className="projects-header">
                 <span className="projects-label">selected work</span>
                 <h1 className="projects-title">Projects</h1>
             </header>
             {projects.map((project, i) => (
-                <div className="project-section" key={project.name}>
+                <article className="project-section" key={project.slug}>
                     <span className="project-bg-number" aria-hidden="true">
                         {String(i + 1).padStart(2, "0")}
                     </span>
@@ -21,27 +22,40 @@ function Projects() {
                             {String(i + 1).padStart(2, "0")}
                         </p>
                         <h2 className="project-name">{project.name}</h2>
-                        <p className="project-tagline">{project.tagline}</p>
+                        <p className="project-status">
+                            {project.status} &middot; {project.period}
+                        </p>
+                        <p className="project-tagline">
+                            {project.draft
+                                ? "Case study draft — story and proof intentionally left open."
+                                : project.problem}
+                        </p>
                         <div className="project-tech">
-                            {project.tech.map((t) => (
+                            {project.stack.map((t) => (
                                 <span key={t}>{t}</span>
                             ))}
                         </div>
                         <div className="project-links">
-                            {project.live && (
+                            <Link
+                                className="project-link project-link--detail"
+                                to={getProjectPath(project)}
+                            >
+                                view case study &rarr;
+                            </Link>
+                            {project.links.live && (
                                 <a
                                     className="project-link"
-                                    href={project.live}
+                                    href={project.links.live}
                                     target="_blank"
                                     rel="noreferrer"
                                 >
                                     live site &#8599;
                                 </a>
                             )}
-                            {project.github && (
+                            {project.links.github && (
                                 <a
                                     className="project-link"
-                                    href={project.github}
+                                    href={project.links.github}
                                     target="_blank"
                                     rel="noreferrer"
                                 >
@@ -50,7 +64,7 @@ function Projects() {
                             )}
                         </div>
                     </div>
-                </div>
+                </article>
             ))}
         </main>
     );

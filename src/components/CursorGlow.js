@@ -5,6 +5,10 @@ function CursorGlow() {
     const ref = useRef(null);
 
     useEffect(() => {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            return undefined;
+        }
+
         const move = (e) => {
             if (ref.current) {
                 ref.current.style.transform = `translate(calc(${e.clientX}px - 50%), calc(${e.clientY}px - 50%))`;

@@ -6,7 +6,7 @@ const ART_URL = process.env.REACT_APP_ART_URL || "https://art.ticusb.com";
 
 function Art() {
     return (
-        <main className="art-page">
+        <main className="art-page" id="main-content">
             <iframe
                 src={ART_URL}
                 title="this-is-art — interactive art gallery"

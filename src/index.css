@@ -77,6 +77,22 @@ ul {
     border: 0;
 }
 
+.skip-link {
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 1000;
+    padding: 0.6rem 0.9rem;
+    color: var(--bg);
+    background: var(--text);
+    border-radius: 3px;
+    transform: translateY(-200%);
+}
+
+.skip-link:focus {
+    transform: translateY(0);
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

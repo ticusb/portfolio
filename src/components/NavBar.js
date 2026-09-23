@@ -53,7 +53,8 @@ function NavBar({ theme, toggleTheme, accent, setAccent }) {
                         <Link
                             to="/projects"
                             className={
-                                location.pathname === "/projects"
+                                location.pathname === "/projects" ||
+                                location.pathname.startsWith("/work/")
                                     ? "active"
                                     : ""
                             }

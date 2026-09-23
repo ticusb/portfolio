@@ -13,6 +13,7 @@
     "scripts": {
         "start": "react-scripts start",
         "build": "react-scripts build",
+        "test": "node --import ./tests/register-hooks.mjs --test",
         "predeploy": "npm run build",
         "deploy": "gh-pages -b gh-pages -d build",
         "spotify:auth": "node scripts/spotify-auth.mjs"

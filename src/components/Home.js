@@ -231,7 +231,7 @@ function Home({ overlayDone }) {
     useReveal(".home-reveal");
 
     return (
-        <main className="home">
+        <main className="home" id="main-content">
             <div className="hero-scroll-container" ref={heroWrapperRef}>
             <section className="hero">
                 <div className="hero-inner">

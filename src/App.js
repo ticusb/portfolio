@@ -5,7 +5,9 @@ import Art from "./components/Art";
 import NavBar from "./components/NavBar";
 import CursorGlow from "./components/CursorGlow";
 import LandingOverlay from "./components/LandingOverlay";
-import { Routes, Route } from "react-router-dom";
+import ProjectDetail from "./components/ProjectDetail";
+import NotFound from "./components/NotFound";
+import { Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
 
 const DEFAULT_ACCENT = "#16a34a";
@@ -29,6 +31,16 @@ const KONAMI_SEQ = [
     "b",
     "a",
 ];
+
+function ScrollToTop() {
+    const { pathname } = useLocation();
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [pathname]);
+
+    return null;
+}
 
 function App() {
     const [overlayDone, setOverlayDone] = useState(false);
@@ -117,6 +129,10 @@ function App() {
 
     return (
         <>
+            <ScrollToTop />
+            <a className="skip-link" href="#main-content">
+                Skip to content
+            </a>
             {!overlayDone && (
                 <LandingOverlay onDone={() => setOverlayDone(true)} />
             )}
@@ -133,7 +149,9 @@ function App() {
             <Routes>
                 <Route path="/" element={<Home overlayDone={overlayDone} />} />
                 <Route path="/projects" element={<Projects />} />
+                <Route path="/work/:slug" element={<ProjectDetail />} />
                 <Route path="/art" element={<Art />} />
+                <Route path="*" element={<NotFound />} />
             </Routes>
         </>
     );

@@ -18,3 +18,9 @@
         display: none;
     }
 }
+
+@media (prefers-reduced-motion: reduce) {
+    .cursor-glow {
+        display: none;
+    }
+}
