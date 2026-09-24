@@ -93,6 +93,10 @@ ul {
     transform: translateY(0);
 }
 
+#main-content:focus {
+    outline: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

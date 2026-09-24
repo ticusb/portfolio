@@ -42,6 +42,16 @@ function ScrollToTop() {
     return null;
 }
 
+// HashRouter owns the URL hash, so a plain "#main-content" link would
+// navigate to a route. Move focus to the page's <main> instead.
+function skipToContent(e) {
+    e.preventDefault();
+    const main = document.getElementById("main-content");
+    if (!main) return;
+    main.setAttribute("tabindex", "-1");
+    main.focus();
+}
+
 function App() {
     const [overlayDone, setOverlayDone] = useState(false);
     const [theme, setTheme] = useState(
@@ -130,7 +140,11 @@ function App() {
     return (
         <>
             <ScrollToTop />
-            <a className="skip-link" href="#main-content">
+            <a
+                className="skip-link"
+                href="#main-content"
+                onClick={skipToContent}
+            >
                 Skip to content
             </a>
             {!overlayDone && (
