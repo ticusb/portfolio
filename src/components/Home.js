@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useReveal } from "../hooks/useReveal";
 import { useClickOutside } from "../hooks/useClickOutside";
+import { getActiveProjects, getProjectPath } from "../data/projects";
 import "./Home.css";
 
 const STACK = [
@@ -30,18 +31,7 @@ const STACK = [
     { category: "infra", items: ["AWS", "Azure", "Docker", "Linux", "Git"] },
 ];
 
-const BUILDING = [
-    {
-        name: "FlightDeck",
-        desc: "AI interview coach for aspiring airline pilots — voice simulation, Whisper transcription, GPT-scored STAR responses.",
-        tech: "React Native · Fastify · OpenAI",
-    },
-    {
-        name: "Homelab Server",
-        desc: "Bare-metal Arch Linux server — reverse proxy, WireGuard VPN, Pi-hole DNS, n8n automation.",
-        tech: "Docker · Nginx · WireGuard",
-    },
-];
+const BUILDING = getActiveProjects();
 
 function Home({ overlayDone }) {
     const heroWrapperRef = useRef(null);
@@ -354,13 +344,19 @@ function Home({ overlayDone }) {
             <section className="building-section home-reveal">
                 <span className="section-label">currently building</span>
                 <ul className="building-list" role="list">
-                    {BUILDING.map(({ name, desc, tech }) => (
-                        <li className="building-item" key={name}>
+                    {BUILDING.map((project) => (
+                        <li className="building-item" key={project.slug}>
                             <div className="building-dot" aria-hidden="true" />
                             <div className="building-body">
-                                <p className="building-name">{name}</p>
-                                <p className="building-desc">{desc}</p>
-                                <p className="building-tech">{tech}</p>
+                                <p className="building-name">
+                                    <Link to={getProjectPath(project)}>
+                                        {project.name}
+                                    </Link>
+                                </p>
+                                <p className="building-desc">{project.summary}</p>
+                                <p className="building-tech">
+                                    {project.stack.slice(0, 3).join(" · ")}
+                                </p>
                             </div>
                         </li>
                     ))}

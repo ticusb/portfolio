@@ -705,3 +705,15 @@
         gap: 3rem;
     }
 }
+
+.building-name a {
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 0.25em;
+    transition: text-decoration-color 0.2s ease;
+}
+
+.building-name a:hover,
+.building-name a:focus-visible {
+    text-decoration-color: var(--accent);
+}

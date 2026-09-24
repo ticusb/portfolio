@@ -57,6 +57,15 @@ test("every project matches the case-study model", () => {
         assert.ok(Array.isArray(project.audience) && project.audience.length > 0);
         assert.ok(project.audience.every((item) => AUDIENCES.includes(item)));
         assert.equal(typeof project.draft, "boolean", `${project.name}.draft`);
+        assert.equal(typeof project.active, "boolean", `${project.name}.active`);
+    }
+});
+
+test("active projects are not finished or shelved", () => {
+    const active = projects.filter(({ active }) => active);
+    assert.ok(active.length > 0);
+    for (const project of active) {
+        assert.ok(["live", "building"].includes(project.status), project.name);
     }
 });
 

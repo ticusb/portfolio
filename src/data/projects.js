@@ -1,4 +1,4 @@
-export const PROJECT_STATUSES = ["live", "shipped", "archived"];
+export const PROJECT_STATUSES = ["live", "building", "shipped", "paused", "archived"];
 export const AUDIENCES = ["hiring", "client"];
 
 const projects = [
@@ -53,6 +53,80 @@ const projects = [
             "hiring",
             "client"
         ],
+        active: true,
+        draft: false,
+    },
+    {
+        slug: "qb-import",
+        name: "qb-import",
+        status: "shipped",
+        period: "April–September 2026",
+        role: "Developer (freelance)",
+        forWhom: "A family friend who runs a group of quick-lube shops",
+        summary: "Turns a day of oil-change sales into a QuickBooks entry with one click.",
+        problem: "Every day someone had to take the sales and deposit reports out of AutoPoll, the shops' point-of-sale system, and key them into QuickBooks by hand, one line at a time, for every store.",
+        approach: "AutoPoll doesn't have an API, so the tool logs in and reads the reports the same way a person would, with requests and BeautifulSoup. It maps every sales code, discount and payment type to the right QuickBooks account and writes a journal entry file ready to import. It started as a command-line script and became a Tkinter desktop app built into a Windows .exe by GitHub Actions, so nobody has to install Python. You pick a date and the stores, then click one button. Mappings are editable in the app, and it refuses to generate anything when sales and deposits don't balance.",
+        outcome: [
+            "Delivered as a double-click Windows app, with dates and stores already filled in for a normal day.",
+            "A day that doesn't balance gets flagged instead of landing in the books.",
+            "20 tests gate every change in CI."
+        ],
+        stack: [
+            "Python",
+            "Tkinter",
+            "BeautifulSoup",
+            "PyInstaller",
+            "GitHub Actions",
+            "pytest"
+        ],
+        links: {
+            "live": null,
+            "github": null,
+            "store": null
+        },
+        evidence: [],
+        featured: true,
+        audience: [
+            "hiring",
+            "client"
+        ],
+        active: false,
+        draft: false,
+    },
+    {
+        slug: "habitgotchi",
+        name: "HabitGotchi",
+        status: "building",
+        period: "April 2026–present",
+        role: "Designer and developer",
+        forWhom: "Me, and maybe other people someday",
+        summary: "A Tamagotchi that lives or dies by your habits, on an e-paper handheld I'm building.",
+        problem: "Habit apps are full of ads and skipping a day costs nothing. I wanted skipping to actually feel like something, so the thing that suffers is a little pet you're responsible for.",
+        approach: "It's C++ on an ESP32-S3 with an 800x480 e-paper screen, built with PlatformIO. The board came with no real docs, so I worked out its screen, clock, battery chip and sensors by dumping the factory firmware. Habits are split into morning, evening and anytime blocks, and the pet grows as you keep them. It keeps real time on the onboard clock and drops to a sleep screen when you put it down. E-paper can't do fast animation, so everything is designed around one gesture in, one frame out. There's a Python pixel-art pipeline that turns drawings into sprites, a couple of mini games (Echo and Connect 4) written as plain testable logic, and an e-reader with its own book format. The case is a 3D-printed shell I'm adapting to stick to the back of my phone with MagSafe.",
+        outcome: [
+            "Running on the hardware: habit list, a pet that grows, a sleep screen and settings.",
+            "Echo, Connect 4 and the e-reader are in, with unit tests.",
+            "Next up is the MagSafe case and more games."
+        ],
+        stack: [
+            "C++",
+            "ESP32-S3",
+            "PlatformIO",
+            "E-paper",
+            "Python",
+            "3D printing"
+        ],
+        links: {
+            "live": null,
+            "github": null,
+            "store": null
+        },
+        evidence: [],
+        featured: false,
+        audience: [
+            "hiring"
+        ],
+        active: true,
         draft: false,
     },
     {
@@ -91,12 +165,13 @@ const projects = [
         audience: [
             "hiring"
         ],
+        active: false,
         draft: false,
     },
     {
         slug: "rust-http-client",
         name: "Rust HTTP client",
-        status: "archived",
+        status: "paused",
         period: "May–October 2024",
         role: "Developer",
         forWhom: "Me, mostly. It's how I'm learning Rust",
@@ -130,6 +205,7 @@ const projects = [
         audience: [
             "hiring"
         ],
+        active: false,
         draft: false,
     },
     {
@@ -165,12 +241,13 @@ const projects = [
         audience: [
             "hiring"
         ],
+        active: true,
         draft: false,
     },
     {
         slug: "ozzy-portfolio",
         name: "ozzy portfolio",
-        status: "archived",
+        status: "shipped",
         period: "May–October 2025",
         role: "Developer",
         forWhom: "Ozzy Tague, 3D animator and VFX artist",
@@ -197,39 +274,7 @@ const projects = [
             "hiring",
             "client"
         ],
-        draft: false,
-    },
-    {
-        slug: "mediaforge",
-        name: "mediaForge",
-        status: "archived",
-        period: "October 2025",
-        role: "Developer",
-        forWhom: "Creators and small businesses (on paper, anyway)",
-        summary: "A browser-based media editor on a Rust backend. Got to MVP, then paused.",
-        problem: "Quick edits like converting a file, removing a background or color grading usually mean desktop software or five different sketchy websites.",
-        approach: "I wrote the product requirements, spec and task plan first, then built the MVP with AI assistance. The backend is Rust and Axum with JWT auth and PostgreSQL. Jobs go through a Redis queue to workers that do the processing, with usage quotas per tier and LUT-based color grading. A React front end handles uploads and shows job status.",
-        outcome: [
-            "Working MVP of the pipeline and the front end, built in five days.",
-            "Then I paused it. It's still paused."
-        ],
-        stack: [
-            "React",
-            "Rust",
-            "Axum",
-            "PostgreSQL",
-            "Redis"
-        ],
-        links: {
-            "live": null,
-            "github": null,
-            "store": null
-        },
-        evidence: [],
-        featured: false,
-        audience: [
-            "hiring"
-        ],
+        active: false,
         draft: false,
     },
 ];
@@ -244,6 +289,10 @@ export function getProjectBySlug(slug) {
     }
 
     return projects.find((project) => project.slug === slug) ?? null;
+}
+
+export function getActiveProjects() {
+    return projects.filter((project) => project.active);
 }
 
 export function getProjectPath(project) {
