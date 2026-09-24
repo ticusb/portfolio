@@ -1,7 +1,11 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getProjectBySlug } from "../data/projects";
 import NotFound from "./NotFound";
 import "./ProjectDetail.css";
+
+const COMMAND = "cat README.md";
+const TYPE_SPEED = 45;
 
 const LINK_LABELS = {
     live: "website",
@@ -9,19 +13,65 @@ const LINK_LABELS = {
     store: "app store",
 };
 
-function ProjectLinks({ links }) {
-    const availableLinks = Object.entries(links).filter(([, url]) => url);
+// Fake-but-stable commit hashes so the outcome log looks like `git log --oneline`.
+function shortHash(text) {
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < text.length; i++) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 0x01000193);
+    }
+    return (hash >>> 0).toString(16).padStart(8, "0").slice(0, 7);
+}
 
-    if (availableLinks.length === 0) return null;
+function TypedCommand() {
+    const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const [typed, setTyped] = useState(reducedMotion ? COMMAND : "");
+
+    useEffect(() => {
+        if (typed.length >= COMMAND.length) return undefined;
+        const t = setTimeout(
+            () => setTyped(COMMAND.slice(0, typed.length + 1)),
+            TYPE_SPEED,
+        );
+        return () => clearTimeout(t);
+    }, [typed]);
 
     return (
-        <div className="case-study-links" aria-label="Project links">
-            {availableLinks.map(([name, url]) => (
-                <a key={name} href={url} target="_blank" rel="noreferrer">
-                    {LINK_LABELS[name]} &#8599;
-                </a>
-            ))}
+        <>
+            <span className="sr-only">{COMMAND}</span>
+            <span aria-hidden="true">{typed}</span>
+        </>
+    );
+}
+
+function ProjectLinks({ links }) {
+    const available = Object.entries(links).filter(([, url]) => url);
+    if (available.length === 0) return null;
+
+    return (
+        <div className="readme-meta-row">
+            <dt>links</dt>
+            <dd className="readme-links">
+                {available.map(([name, url]) => (
+                    <a key={name} href={url} target="_blank" rel="noreferrer">
+                        [{LINK_LABELS[name]} &#8599;]
+                    </a>
+                ))}
+            </dd>
         </div>
+    );
+}
+
+function Heading({ id, children }) {
+    return (
+        <h2 id={id}>
+            <span className="readme-mark" aria-hidden="true">
+                ##{" "}
+            </span>
+            {children}
+        </h2>
     );
 }
 
@@ -31,77 +81,98 @@ function ProjectDetail() {
 
     if (!project) return <NotFound />;
 
-    const hasEvidence = project.evidence.length > 0;
-
-    if (project.draft) {
-        return (
-            <main className="case-study-page" id="main-content">
-                <div className="case-study-shell case-study-draft">
-                    <Link to="/projects" className="case-study-back">
-                        &larr; all projects
-                    </Link>
-                    <p className="case-study-kicker">{project.status}</p>
-                    <h1>{project.name}</h1>
-                    <p className="case-study-draft-note">
-                        This case study is a validated data stub. Its story, proof,
-                        and final place in the portfolio are intentionally left for
-                        Ticus to decide.
-                    </p>
-                    <div className="case-study-stack" aria-label="Technology stack">
-                        {project.stack.map((item) => (
-                            <span key={item}>{item}</span>
-                        ))}
-                    </div>
-                    <ProjectLinks links={project.links} />
-                </div>
-            </main>
-        );
-    }
-
     return (
-        <main className="case-study-page" id="main-content">
-            <article className="case-study-shell">
-                <Link to="/projects" className="case-study-back">
-                    &larr; all projects
-                </Link>
-                <header className="case-study-header">
-                    <p className="case-study-kicker">
-                        {project.status} &middot; {project.period}
-                    </p>
-                    <h1>{project.name}</h1>
-                    <p className="case-study-for">For {project.forWhom}</p>
-                    <p className="case-study-role">{project.role}</p>
-                    <ProjectLinks links={project.links} />
-                </header>
+        <main className="readme-page" id="main-content">
+            <article className="readme" aria-labelledby="readme-title">
+                <p className="readme-prompt">
+                    <Link to="/projects" aria-label="All projects">
+                        ~/work
+                    </Link>
+                    <span className="readme-path">/{project.slug}</span>
+                    <span className="readme-dollar" aria-hidden="true">
+                        {" "}
+                        ${" "}
+                    </span>
+                    <TypedCommand />
+                </p>
+                <div className="readme-rule" aria-hidden="true" />
 
-                <div className="case-study-body">
-                    <section aria-labelledby="case-study-problem">
-                        <p className="case-study-section-label">01 / problem</p>
-                        <h2 id="case-study-problem">The problem</h2>
-                        <p>{project.problem}</p>
-                    </section>
+                <div className="readme-body">
+                    <header>
+                        <h1 id="readme-title">
+                            <span className="readme-mark" aria-hidden="true">
+                                #{" "}
+                            </span>
+                            {project.name}
+                        </h1>
+                        <p className="readme-summary">{project.summary}</p>
+                        <dl className="readme-meta">
+                            <div className="readme-meta-row">
+                                <dt>status</dt>
+                                <dd>
+                                    <span
+                                        className={`readme-status readme-status--${project.status}`}
+                                    >
+                                        {project.status}
+                                    </span>{" "}
+                                    &middot; {project.period}
+                                </dd>
+                            </div>
+                            <div className="readme-meta-row">
+                                <dt>role</dt>
+                                <dd>{project.role}</dd>
+                            </div>
+                            <div className="readme-meta-row">
+                                <dt>for</dt>
+                                <dd>{project.forWhom}</dd>
+                            </div>
+                            <ProjectLinks links={project.links} />
+                        </dl>
+                    </header>
 
-                    <section aria-labelledby="case-study-approach">
-                        <p className="case-study-section-label">02 / approach</p>
-                        <h2 id="case-study-approach">The approach</h2>
-                        <p>{project.approach}</p>
-                    </section>
+                    {project.draft ? (
+                        <section aria-labelledby="readme-todo">
+                            <Heading id="readme-todo">TODO</Heading>
+                            <p>Still writing this one up. Check back soon.</p>
+                        </section>
+                    ) : (
+                        <>
+                            <section aria-labelledby="readme-why">
+                                <Heading id="readme-why">Why</Heading>
+                                <p>{project.problem}</p>
+                            </section>
 
-                    <section aria-labelledby="case-study-outcomes">
-                        <p className="case-study-section-label">03 / outcome</p>
-                        <h2 id="case-study-outcomes">What shipped</h2>
-                        <ul className="case-study-outcomes">
-                            {project.outcome.map((item) => (
-                                <li key={item}>{item}</li>
-                            ))}
-                        </ul>
-                    </section>
+                            <section aria-labelledby="readme-how">
+                                <Heading id="readme-how">How I built it</Heading>
+                                <p>{project.approach}</p>
+                            </section>
 
-                    {hasEvidence && (
-                        <section aria-labelledby="case-study-evidence">
-                            <p className="case-study-section-label">04 / evidence</p>
-                            <h2 id="case-study-evidence">Proof</h2>
-                            <dl className="case-study-evidence">
+                            <section aria-labelledby="readme-log">
+                                <Heading id="readme-log">Where it's at</Heading>
+                                <p className="readme-cmd" aria-hidden="true">
+                                    $ git log --oneline
+                                </p>
+                                <ul className="readme-log">
+                                    {project.outcome.map((item) => (
+                                        <li key={item}>
+                                            <span
+                                                className="readme-hash"
+                                                aria-hidden="true"
+                                            >
+                                                {shortHash(item)}
+                                            </span>
+                                            <span>{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </section>
+                        </>
+                    )}
+
+                    {project.evidence.length > 0 && (
+                        <section aria-labelledby="readme-receipts">
+                            <Heading id="readme-receipts">Receipts</Heading>
+                            <dl className="readme-receipts">
                                 {project.evidence.map((item) => (
                                     <div key={`${item.label}-${item.value}`}>
                                         <dt>{item.label}</dt>
@@ -124,17 +195,25 @@ function ProjectDetail() {
                         </section>
                     )}
 
-                    <section aria-labelledby="case-study-stack">
-                        <p className="case-study-section-label">
-                            {hasEvidence ? "05" : "04"} / stack
+                    <section aria-labelledby="readme-stack">
+                        <Heading id="readme-stack">Built with</Heading>
+                        <p className="readme-cmd" aria-hidden="true">
+                            $ ls stack/
                         </p>
-                        <h2 id="case-study-stack">Built with</h2>
-                        <div className="case-study-stack">
+                        <ul className="readme-stack">
                             {project.stack.map((item) => (
-                                <span key={item}>{item}</span>
+                                <li key={item}>{item}</li>
                             ))}
-                        </div>
+                        </ul>
                     </section>
+
+                    <p className="readme-exit">
+                        <Link to="/projects">
+                            <span aria-hidden="true">$ </span>cd ..
+                            <span className="sr-only"> (back to all projects)</span>
+                        </Link>
+                        <span className="readme-cursor" aria-hidden="true" />
+                    </p>
                 </div>
             </article>
         </main>

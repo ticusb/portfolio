@@ -26,9 +26,7 @@ function Projects() {
                             {project.status} &middot; {project.period}
                         </p>
                         <p className="project-tagline">
-                            {project.draft
-                                ? "Case study draft — story and proof intentionally left open."
-                                : project.problem}
+                            {project.summary}
                         </p>
                         <div className="project-tech">
                             {project.stack.map((t) => (
@@ -40,7 +38,7 @@ function Projects() {
                                 className="project-link project-link--detail"
                                 to={getProjectPath(project)}
                             >
-                                view case study &rarr;
+                                cat README &rarr;
                             </Link>
                             {project.links.live && (
                                 <a

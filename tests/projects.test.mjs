@@ -14,6 +14,7 @@ const requiredStringFields = [
     "period",
     "role",
     "forWhom",
+    "summary",
     "problem",
     "approach",
 ];
