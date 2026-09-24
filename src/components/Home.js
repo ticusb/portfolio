@@ -44,10 +44,20 @@ function TrackLink({ url, className, children }) {
 }
 
 function AlbumArt({ src, alt, className }) {
-    if (!src) {
+    const [failed, setFailed] = useState(false);
+    useEffect(() => setFailed(false), [src]);
+    if (!src || failed) {
         return <div className={`${className} art-placeholder`} aria-hidden="true" />;
     }
-    return <img src={src} alt={alt} className={className} loading="lazy" />;
+    return (
+        <img
+            src={src}
+            alt={alt}
+            className={className}
+            loading="lazy"
+            onError={() => setFailed(true)}
+        />
+    );
 }
 
 function Home({ overlayDone }) {
