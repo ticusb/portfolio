@@ -33,6 +33,23 @@ const STACK = [
 
 const BUILDING = getActiveProjects();
 
+// Plays from the self-hosted server may have no link or cover art.
+function TrackLink({ url, className, children }) {
+    if (!url) return <div className={className}>{children}</div>;
+    return (
+        <a href={url} target="_blank" rel="noreferrer" className={className}>
+            {children}
+        </a>
+    );
+}
+
+function AlbumArt({ src, alt, className }) {
+    if (!src) {
+        return <div className={`${className} art-placeholder`} aria-hidden="true" />;
+    }
+    return <img src={src} alt={alt} className={className} loading="lazy" />;
+}
+
 function Home({ overlayDone }) {
     const heroWrapperRef = useRef(null);
     const nameRef = useRef(null);
@@ -368,16 +385,14 @@ function Home({ overlayDone }) {
                     <div className="spotify-now">
                         <span className="section-label">listening</span>
                         {listening.current && (
-                            <a
-                                href={listening.current.url}
-                                target="_blank"
-                                rel="noreferrer"
+                            <TrackLink
+                                url={listening.current.url}
                                 className="now-playing-card"
                             >
                                 <div className="now-playing-badge">
                                     <span className="now-playing-dot" />
                                 </div>
-                                <img
+                                <AlbumArt
                                     src={listening.current.albumArt}
                                     alt={listening.current.album}
                                     className="now-playing-art"
@@ -390,19 +405,17 @@ function Home({ overlayDone }) {
                                         {listening.current.artist}
                                     </p>
                                 </div>
-                            </a>
+                            </TrackLink>
                         )}
                         {listening.recent.length > 0 && (
                             <ul className="recent-list" role="list">
-                                {listening.recent.map((track) => (
-                                    <li key={track.url}>
-                                        <a
-                                            href={track.url}
-                                            target="_blank"
-                                            rel="noreferrer"
+                                {listening.recent.map((track, i) => (
+                                    <li key={track.id ?? `${i}-${track.url}`}>
+                                        <TrackLink
+                                            url={track.url}
                                             className="recent-track"
                                         >
-                                            <img
+                                            <AlbumArt
                                                 src={track.albumArt}
                                                 alt={track.album}
                                                 className="recent-art"
@@ -415,7 +428,7 @@ function Home({ overlayDone }) {
                                                     {track.artist}
                                                 </span>
                                             </div>
-                                        </a>
+                                        </TrackLink>
                                     </li>
                                 ))}
                             </ul>

@@ -717,3 +717,12 @@
 .building-name a:focus-visible {
     text-decoration-color: var(--accent);
 }
+
+/* Stand-in cover for self-hosted plays with no art: a little record. */
+.art-placeholder {
+    background:
+        radial-gradient(circle, var(--accent) 0 12%, transparent 13%),
+        repeating-radial-gradient(circle, var(--border) 0 1px, transparent 2px 4px),
+        var(--bg-glass);
+    border: 1px solid var(--border);
+}
