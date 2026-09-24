@@ -83,12 +83,19 @@ test("invalid and unknown route slugs do not resolve", () => {
     }
 });
 
-test("V1 Ready is the one complete proof of concept", () => {
-    const completeProjects = projects.filter(({ draft }) => !draft);
-    assert.deepEqual(completeProjects.map(({ slug }) => slug), ["v1-ready"]);
-    assert.ok(completeProjects[0].links.store);
-    assert.ok(completeProjects[0].evidence.length > 0);
+test("published case studies are complete", () => {
+    for (const project of projects.filter(({ draft }) => !draft)) {
+        assert.notEqual(project.problem, "TODO", project.name);
+        assert.notEqual(project.approach, "TODO", project.name);
+        assert.ok(project.outcome.length > 0, project.name);
+    }
 
+    const v1 = getProjectBySlug("v1-ready");
+    assert.ok(v1.links.store);
+    assert.ok(v1.evidence.length > 0);
+});
+
+test("draft stubs stay visibly unfinished", () => {
     for (const stub of projects.filter(({ draft }) => draft)) {
         assert.equal(stub.problem, "TODO");
         assert.equal(stub.approach, "TODO");

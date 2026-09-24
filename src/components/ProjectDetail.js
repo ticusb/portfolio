@@ -31,6 +31,8 @@ function ProjectDetail() {
 
     if (!project) return <NotFound />;
 
+    const hasEvidence = project.evidence.length > 0;
+
     if (project.draft) {
         return (
             <main className="case-study-page" id="main-content">
@@ -95,33 +97,37 @@ function ProjectDetail() {
                         </ul>
                     </section>
 
-                    <section aria-labelledby="case-study-evidence">
-                        <p className="case-study-section-label">04 / evidence</p>
-                        <h2 id="case-study-evidence">Proof</h2>
-                        <dl className="case-study-evidence">
-                            {project.evidence.map((item) => (
-                                <div key={`${item.label}-${item.value}`}>
-                                    <dt>{item.label}</dt>
-                                    <dd>
-                                        {item.url ? (
-                                            <a
-                                                href={item.url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                            >
-                                                {item.value} &#8599;
-                                            </a>
-                                        ) : (
-                                            item.value
-                                        )}
-                                    </dd>
-                                </div>
-                            ))}
-                        </dl>
-                    </section>
+                    {hasEvidence && (
+                        <section aria-labelledby="case-study-evidence">
+                            <p className="case-study-section-label">04 / evidence</p>
+                            <h2 id="case-study-evidence">Proof</h2>
+                            <dl className="case-study-evidence">
+                                {project.evidence.map((item) => (
+                                    <div key={`${item.label}-${item.value}`}>
+                                        <dt>{item.label}</dt>
+                                        <dd>
+                                            {item.url ? (
+                                                <a
+                                                    href={item.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                >
+                                                    {item.value} &#8599;
+                                                </a>
+                                            ) : (
+                                                item.value
+                                            )}
+                                        </dd>
+                                    </div>
+                                ))}
+                            </dl>
+                        </section>
+                    )}
 
                     <section aria-labelledby="case-study-stack">
-                        <p className="case-study-section-label">05 / stack</p>
+                        <p className="case-study-section-label">
+                            {hasEvidence ? "05" : "04"} / stack
+                        </p>
                         <h2 id="case-study-stack">Built with</h2>
                         <div className="case-study-stack">
                             {project.stack.map((item) => (
