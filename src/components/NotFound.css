@@ -14,9 +14,8 @@
     color: var(--ink);
     font-family: "Gaegu", "Comic Sans MS", "Chalkboard SE", cursive;
 }
-@media (prefers-color-scheme: dark) {
-    .lost { --paper: #17162b; --ink: #f3ecdc; --dim: #c9c1dc; --red: #ff8a75; }
-}
+/* space: the same black paper as the world (NotFound picks the world like the engine does) */
+.lost.night { --paper: #17162b; --ink: #f3ecdc; --dim: #c9c1dc; --red: #ff8a75; color-scheme: dark; }
 .lost-code { margin: 0; font-size: 24px; color: var(--red); transform: rotate(-3deg); }
 .lost h1 { margin: 0; font-size: clamp(40px, 9vw, 72px); line-height: 1; }
 .lost p { margin: 0; font-size: 22px; color: var(--dim); }
