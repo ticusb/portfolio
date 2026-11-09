@@ -68,7 +68,7 @@ export function mountCrayonWorld(root, opts) {
   byId("rec-form").hidden = true;
   byId("worldnav").classList.remove("show", "static");
   byId("worldnav").setAttribute("inert", "");
-  root.classList.remove("home", "night");
+  root.classList.remove("home", "night", "gl-ready");
   root.querySelectorAll(".scrawl.on").forEach(function (el) { el.classList.remove("on"); });
   root.querySelectorAll(".fallback").forEach(function (el) { el.remove(); });
 
@@ -189,6 +189,14 @@ export function mountCrayonWorld(root, opts) {
         if (o.geometry && o.geometry.dispose && sharedGeo.indexOf(o.geometry) < 0) o.geometry.dispose();
       });
     }
+    // the first draw of a world compiles its shaders and uploads every mesh to the GPU: a 0.2-0.3s freeze. Do it
+    // right after building, with off-screen culling off so everything goes up at once, while nothing on the page
+    // is moving yet (the canvas fades in after, see gl-ready); then nothing hitches when it first comes into view
+    function warmUp() {
+      var culled = [];
+      scene.traverse(function (o) { if (o.frustumCulled) { culled.push(o); o.frustumCulled = false; } });
+      try { renderer.compile(scene, camera); renderer.render(scene, camera); } finally { culled.forEach(function (o) { o.frustumCulled = true; }); }
+    }
     function loadScene(name, straightHome) {
       if (!SCENES[name]) name = "space";
       disposeWorld();
@@ -200,6 +208,7 @@ export function mountCrayonWorld(root, opts) {
       if (state.hero) state.hero.traverse(function (o) { if (o.material && o.material.uniforms && o.material.uniforms.uKeep) o.material.uniforms.uKeep.value = 1; });
       simFrom = null; heroAnchor = null;
       if (thinLines) thinOutlines();
+      warmUp();
       buildBeats();
       t0 = started ? performance.now() : Infinity;
       shared.uReveal.value = reduce ? 1 : 0;
@@ -564,6 +573,7 @@ export function mountCrayonWorld(root, opts) {
       if (dpr > DPR_FLOOR) { dpr = Math.max(DPR_FLOOR, dpr - 0.25); renderer.setPixelRatio(dpr); shared.uDpr.value = dpr; resize(); }
       else if (!thinLines) { thinLines = true; thinOutlines(); }
     }
+    var glShown = false;
     function frame() {
       var now = performance.now();
       var t = (now - loadAt) / 1000;
@@ -642,6 +652,8 @@ export function mountCrayonWorld(root, opts) {
       }
       if (!reduce) { fadeDoodles(f60); drawPowder(f60); }
       renderer.render(scene, camera);
+      // the first real frame is up (and the warm-up is behind us): fade the drawing in
+      if (!glShown) { glShown = true; root.classList.add("gl-ready"); }
       if (section === "projects" && state.picks) {
         // labels shuffle up so they don't sit on each other,
         // and hide any that would land behind the panel: its top edge on a phone (bottom sheet), its right edge on desktop
@@ -691,6 +703,6 @@ export function mountCrayonWorld(root, opts) {
     alive = false;
     cleanups.forEach(function (fn) { try { fn(); } catch (e) { /* already gone */ } });
     document.documentElement.classList.remove("crayon-lock");
-    root.classList.remove("home", "night");
+    root.classList.remove("home", "night", "gl-ready");
   };
 }
