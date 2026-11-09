@@ -31,6 +31,7 @@ export function mountCrayonWorld(root) {
   byId("gate").hidden = false;
   byId("replay").hidden = true;
   byId("tunes").hidden = true;
+  byId("rec-form").hidden = true;
   byId("worldnav").classList.remove("show", "static");
   byId("worldnav").setAttribute("inert", "");
   root.classList.remove("home", "night");
@@ -133,6 +134,7 @@ export function mountCrayonWorld(root) {
 
   /* the music card: what I'm playing, and a box to recommend me a song */
   var tunesEl = byId("tunes"), tunesTrack = byId("tunes-track"), tunesLabel = byId("tunes-label");
+  var recToggle = byId("rec-toggle");
   var recForm = byId("rec-form"), recQ = byId("rec-q"), recList = byId("rec-results"), recStatus = byId("rec-status");
   var tunesTimer = 0, searchTimer = 0, searchSeq = 0, recBusy = false;
   cleanups.push(function () { clearInterval(tunesTimer); clearTimeout(searchTimer); });
@@ -148,8 +150,16 @@ export function mountCrayonWorld(root) {
       })
       .catch(function () { if (alive) tunesTrack.textContent = "the radio's off right now"; });
   }
+  function setRecOpen(open) {
+    recForm.hidden = !open;
+    recToggle.setAttribute("aria-expanded", String(open));
+    recToggle.textContent = open ? "never mind" : "rec me a song \u2192";
+    if (open) recQ.focus(); else { closeResults(); recStatus.textContent = ""; }
+  }
+  listen(recToggle, "click", function () { setRecOpen(recForm.hidden); });
   function showTunes(on) {
     tunesEl.hidden = !on;
+    if (!on && !recForm.hidden) setRecOpen(false);
     clearInterval(tunesTimer);
     if (on) { loadPlaying(); tunesTimer = setInterval(function () { if (!document.hidden) loadPlaying(); }, 30000); }
   }
@@ -189,7 +199,7 @@ export function mountCrayonWorld(root) {
         .catch(function () { if (alive) recStatus.textContent = "search is down right now"; });
     }, 350);
   });
-  listen(recQ, "keydown", function (e) { if (e.key === "Escape") closeResults(); });
+  listen(recQ, "keydown", function (e) { if (e.key === "Escape") { if (!recList.hidden) closeResults(); else { setRecOpen(false); recToggle.focus(); } } });
   listen(recForm, "submit", function (e) { e.preventDefault(); var first = recList.querySelector("button"); if (first) first.click(); });
 
   function fail() {
