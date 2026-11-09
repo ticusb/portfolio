@@ -280,7 +280,7 @@ export function mountCrayonWorld(root, opts) {
     listen(dc, "pointermove", function (e) {
       if (!inVoid || !state.void) return;
       if (state.void.isGrabbed()) { var p = voidPoint(e); if (p) state.void.drag(p); }
-      else if (e.pointerType === "mouse") dc.style.cursor = overMe(e) ? "grab" : "default";
+      else if (e.pointerType === "mouse") dc.style.cursor = overMe(e) ? "grab" : "";
     });
     function letGo() { if (state.void && state.void.isGrabbed()) { state.void.release(); dc.style.cursor = inVoid ? "grab" : ""; } }
     listen(dc, "pointerup", letGo); listen(dc, "pointercancel", letGo);
@@ -288,7 +288,7 @@ export function mountCrayonWorld(root, opts) {
     function enterVoid() {
       if (section !== "monologue") return;
       inVoid = true; lastSectionCam = state.void.cam; blendFrom = 1; sectionAt = performance.now() - 1e6;
-      root.classList.add("in-void"); dc.style.cursor = "default";
+      root.classList.add("in-void"); dc.style.cursor = "";
       panelBack.textContent = "\u2190 back out";
       panel.monologue();
       later(function () { wipe(false); }, 80);
