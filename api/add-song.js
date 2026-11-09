@@ -13,10 +13,20 @@ export default async function handler(req, res) {
     });
     if (!ok) return;
 
-    const { uri, name, artist } = req.body ?? {};
-    if (!uri?.trim()) return res.status(400).json({ error: "uri required" });
+    const body = req.body && typeof req.body === "object" ? req.body : {};
+    const uri = typeof body.uri === "string" ? body.uri.trim() : "";
+    if (!uri) return res.status(400).json({ error: "uri required" });
     if (!/^spotify:track:[A-Za-z0-9]{22}$/.test(uri)) {
         return res.status(400).json({ error: "invalid uri" });
+    }
+    // name and artist only go back to the browser; keep them short strings
+    const text = (v) => (typeof v === "string" ? v.slice(0, 200) : "");
+    const name = text(body.name);
+    const artist = text(body.artist);
+    // a missing id would otherwise go out as the string "undefined"
+    if (!process.env.SPOTIFY_PLAYLIST_ID) {
+        console.error("add-song unavailable: SPOTIFY_PLAYLIST_ID not set");
+        return res.status(503).json({ error: "temporarily unavailable" });
     }
 
     try {

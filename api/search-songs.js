@@ -12,8 +12,9 @@ export default async function handler(req, res) {
     });
     if (!ok) return;
 
-    const { q } = req.query;
-    if (!q?.trim()) return res.status(400).json({ error: "query required" });
+    // ?q=a&q=b arrives as an array; only a single string is a query
+    const q = typeof req.query?.q === "string" ? req.query.q : "";
+    if (!q.trim()) return res.status(400).json({ error: "query required" });
     if (q.length > 100) return res.status(400).json({ error: "query too long" });
 
     try {
@@ -30,11 +31,12 @@ export default async function handler(req, res) {
 
         const data = await searchRes.json();
 
-        const tracks = (data.tracks?.items ?? []).map((t) => ({
+        // Spotify can return null entries in items; skip them instead of failing the whole search
+        const tracks = (data.tracks?.items ?? []).filter(Boolean).map((t) => ({
             uri: t.uri,
             name: t.name,
-            artist: t.artists.map((a) => a.name).join(", "),
-            albumArt: t.album.images[2]?.url ?? t.album.images[0]?.url,
+            artist: (t.artists ?? []).map((a) => a.name).join(", "),
+            albumArt: t.album?.images?.[2]?.url ?? t.album?.images?.[0]?.url,
         }));
 
         return res.status(200).json({ tracks });
