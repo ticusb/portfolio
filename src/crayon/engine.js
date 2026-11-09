@@ -259,18 +259,18 @@ export function mountCrayonWorld(root, opts) {
       }
     }
     // in the void you can grab me and drag me around: I dangle from where you hold me and drift back when let go
-    var voidRay = new THREE.Raycaster(), voidNdc = new THREE.Vector2(), voidO = new THREE.Vector3(), voidD = new THREE.Vector3(), voidP = new THREE.Vector3();
-    function aimVoid(e) { voidNdc.set(e.clientX / window.innerWidth * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1); voidRay.setFromCamera(voidNdc, camera); }
+    var pointerRay = new THREE.Raycaster(), pointerNdc = new THREE.Vector2(), voidO = new THREE.Vector3(), voidD = new THREE.Vector3(), voidP = new THREE.Vector3();
+    function aimPointer(e) { pointerNdc.set(e.clientX / window.innerWidth * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1); pointerRay.setFromCamera(pointerNdc, camera); }
     // where the pointer meets the void's z = 0 plane, in the void's own space
     function voidPoint(e) {
-      aimVoid(e);
+      aimPointer(e);
       var G = state.void.group;
-      voidO.copy(voidRay.ray.origin); G.worldToLocal(voidO);
-      voidD.copy(voidRay.ray.origin).add(voidRay.ray.direction); G.worldToLocal(voidD); voidD.sub(voidO);
+      voidO.copy(pointerRay.ray.origin); G.worldToLocal(voidO);
+      voidD.copy(pointerRay.ray.origin).add(pointerRay.ray.direction); G.worldToLocal(voidD); voidD.sub(voidO);
       if (Math.abs(voidD.z) < 1e-6) return null;
       return voidP.copy(voidO).addScaledVector(voidD, -voidO.z / voidD.z);
     }
-    function overMe(e) { aimVoid(e); return voidRay.intersectObject(state.void.hitTarget, true).length > 0; }
+    function overMe(e) { aimPointer(e); return pointerRay.intersectObject(state.void.hitTarget, true).length > 0; }
     listen(dc, "pointerdown", function (e) {
       if (!inVoid || !state.void || !overMe(e)) return;
       var p = voidPoint(e); if (!p) return;
@@ -391,8 +391,8 @@ export function mountCrayonWorld(root, opts) {
     // on the gate you can grab me too: I dangle from where you hold me and drift back to my spot when let go
     var gd = { grabbed: false, off: new THREE.Vector3(), vel: new THREE.Vector3(), target: new THREE.Vector3(), grabAt: new THREE.Vector3(), plane: new THREE.Plane(), hit: new THREE.Vector3(), swing: 0, swingV: 0, flail: 0, tmp: new THREE.Vector3() };
     function heroHit(e) {
-      aimVoid(e);
-      var h = voidRay.intersectObject(state.hero, true)[0];
+      aimPointer(e);
+      var h = pointerRay.intersectObject(state.hero, true)[0];
       return h ? h.point : null;
     }
     listen(gateEl, "pointerdown", function (e) {
@@ -407,8 +407,8 @@ export function mountCrayonWorld(root, opts) {
     listen(gateEl, "pointermove", function (e) {
       if (mode !== "gate" || !state.hero) return;
       if (gd.grabbed) {
-        aimVoid(e);
-        if (voidRay.ray.intersectPlane(gd.plane, gd.hit)) gd.target.copy(world.worldToLocal(gd.hit)).sub(gd.grabAt);
+        aimPointer(e);
+        if (pointerRay.ray.intersectPlane(gd.plane, gd.hit)) gd.target.copy(world.worldToLocal(gd.hit)).sub(gd.grabAt);
       } else if (e.pointerType === "mouse") gateEl.style.cursor = e.target === gateEl && heroHit(e) ? "grab" : "";
     });
     function dropHero() { if (gd.grabbed) { gd.grabbed = false; gateEl.style.cursor = ""; } }
@@ -467,32 +467,34 @@ export function mountCrayonWorld(root, opts) {
     // camera arrives at the other world's home from where the story says it should (out of the Earth, or down
     // from the sky). Reduced motion: straight there.
     var traveling = false;
+    // the trip, in ms: the camera leaves over LEAVE, the blot closes at BLOT, the cut lands at CUT, the camera arrives over ARRIVE
+    var TRAVEL = { LEAVE: 1100, BLOT: 820, CUT: 1240, ARRIVE: 1900 };
     function easeInOut(x) { return x * x * (3 - 2 * x); }
     function travelTo(name) {
       if (traveling) return;
       if (section) { section = null; selected = null; panelEl.hidden = true; picksEl.hidden = true; sectionBlend = 0; blendFrom = 0; }
       if (inVoid) { inVoid = false; outOfVoid(); }
       if (reduce || !state.travel) { currentName = name; loadScene(name, true); return; }
-      traveling = true; flip.disabled = true;
+      traveling = true; // the toggle stays focusable; travelTo ignores clicks until we land
       var leave = { pose: state.travel.leave(), w: 0 }, from = performance.now();
       rig.setTravel(leave);
-      var tick = setInterval(function () { leave.w = easeInOut(clamp01((performance.now() - from) / 1100)) * 0.97; }, 16);
+      var tick = setInterval(function () { leave.w = easeInOut(clamp01((performance.now() - from) / TRAVEL.LEAVE)) * 0.97; }, 16);
       cleanups.push(function () { clearInterval(tick); });
       later(function () {
         wipeEl.style.setProperty("--x", "50%"); wipeEl.style.setProperty("--y", "50%");
         wipeEl.style.setProperty("--wipe", name === "space" ? "#1d2156" : "#d6ebff");
         wipeEl.classList.remove("out"); wipeEl.classList.add("in");
-      }, 820);
+      }, TRAVEL.BLOT);
       later(function () {
         clearInterval(tick);
         currentName = name;
         loadScene(name, true);
         var arrive = { pose: state.travel ? state.travel.arrive() : null, w: 1 }, at = performance.now();
         rig.setTravel(arrive.pose ? arrive : null);
-        var tick2 = setInterval(function () { arrive.w = 1 - easeInOut(clamp01((performance.now() - at) / 1900)); if (arrive.w <= 0) { clearInterval(tick2); rig.setTravel(null); traveling = false; flip.disabled = false; } }, 16);
+        var tick2 = setInterval(function () { arrive.w = 1 - easeInOut(clamp01((performance.now() - at) / TRAVEL.ARRIVE)); if (arrive.w <= 0) { clearInterval(tick2); rig.setTravel(null); traveling = false; } }, 16);
         cleanups.push(function () { clearInterval(tick2); });
         later(function () { wipeEl.classList.add("out"); later(function () { wipeEl.classList.remove("in", "out"); wipeEl.style.removeProperty("--wipe"); }, 500); }, 120);
-      }, 1240);
+      }, TRAVEL.CUT);
     }
     listen(flip, "click", function () { go(currentName === "space" ? "ski" : "space", true); });
     function followTheme() {
