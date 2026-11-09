@@ -1,36 +1,37 @@
-# ticus — Personal Portfolio
+# ticus — ticusb.com
 
-my personal portfolio. live at [ticusb.com](https://ticusb.com).
+my corner of the internet: a crayon drawing you can walk around in. live at [ticusb.com](https://ticusb.com).
 
-## Tech Stack
+## What it is
 
-- **React 18** (Create React App) with React Router 6
-- **Fully custom CSS** — no framework, just css variables and vibes
-- **GitHub Pages** with a custom domain via CNAME
+Click the crayon and the page draws itself, then turns 3D. Light mode is a ski run (I carve down my blue mountain and 360 through a ring of fire over a lava crevasse); dark mode is space (a UFO beams me up). Then you land somewhere the nav lives in the world:
 
-## Pages
+- **about**: the camera climbs to the summit where I'm chilling
+- **projects**: a snow sculpture garden (or constellations), one per project; click one
+- **monologue**: zoom into my face and float around inside my head
 
-- **Home** — the crayon world: click the crayon, watch the intro (a ski run, or a UFO abduction in space), then land on a scene where the nav lives in the world. Light mode skis, dark mode goes to space.
-- **About** — the short version, plus what I work with
-- **Monologue** — me thinking out loud (empty for now)
-- **Projects** — full-viewport scroll-reveal showcase
+Also: draw on the page, rec me a song, and push your cursor to an edge to find the end of the simulation.
 
-## Features
+## Stack
 
-- light/dark mode toggle + live accent color picker (persisted to localStorage)
-- the home page is three.js (pinned to 0.128.0, the shaders are tuned for it) drawn to look like crayon, with a now-playing card and a song-rec box
-- draw on the home page; push your cursor to an edge and the simulation starts to show
-- cursor glow that follows your mouse and reacts to your accent color
+- React 18 (Create React App), plain JS, React Router 6 (hash routes deep-link into the world: `#/about`, `#/work/<slug>`)
+- three.js pinned to **0.128.0** (the custom crayon shaders are tuned for it)
+- Vercel: the site plus `/api` functions for now-playing (ListenBrainz + Spotify) and song recs
+
+## Where things are
+
+- `src/crayon/`: the world. `engine.js` runs the gate, intro clock, sections and render loop; `worlds/` has ski and space (as beats + camera shots); `shaders.js` is the crayon look
+- `src/data/projects.js`: projects; `src/data/monologue.js`: the monologue
+- `tools/dailies/`: films the world frame by frame on the GPU to judge motion (`node tools/dailies/film.mjs --help` is the header comment)
 
 ## Development
 
 ```bash
 npm install
-npm start        # dev server at localhost:3000
-npm run build    # production build
-npm run deploy   # ships to ticusb.com
+npx vercel dev   # localhost:3000 with /api (plain npm start has no /api)
+npm test         # node tests
+npm run lint
+npm run build
 ```
 
-## Easter Eggs
-
-there are two. good luck.
+Deploys: push to `main`.
