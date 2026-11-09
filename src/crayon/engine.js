@@ -203,6 +203,7 @@ export function mountCrayonWorld(root, opts) {
         ? "A crayon drawing in space: Ticus floats in an astronaut suit until a UFO flies by and beams him up. Links orbit around him."
         : "A crayon drawing of a ski run: Ticus carves down a blue mountain, spins through a ring of fire over a lava crevasse, and stops by the camera. Penguins hold the links.");
       section = null; selected = null; sectionBlend = 0; panelEl.hidden = true; picksEl.hidden = true;
+      if (inVoid) { inVoid = false; outOfVoid(); }
       buildPicks();
       if (started) startIntro(false); else { mode = "gate"; replayScrawls(); }
     }
@@ -237,9 +238,37 @@ export function mountCrayonWorld(root, opts) {
         later(function () { if (wipeEl.classList.contains("out")) wipeEl.classList.remove("in", "out"); }, 500);
       }
     }
+    // in the void you can grab me and drag me around: I dangle from where you hold me and drift back when let go
+    var voidRay = new THREE.Raycaster(), voidNdc = new THREE.Vector2(), voidO = new THREE.Vector3(), voidD = new THREE.Vector3(), voidP = new THREE.Vector3();
+    function aimVoid(e) { voidNdc.set(e.clientX / window.innerWidth * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1); voidRay.setFromCamera(voidNdc, camera); }
+    // where the pointer meets the void's z = 0 plane, in the void's own space
+    function voidPoint(e) {
+      aimVoid(e);
+      var G = state.void.group;
+      voidO.copy(voidRay.ray.origin); G.worldToLocal(voidO);
+      voidD.copy(voidRay.ray.origin).add(voidRay.ray.direction); G.worldToLocal(voidD); voidD.sub(voidO);
+      if (Math.abs(voidD.z) < 1e-6) return null;
+      return voidP.copy(voidO).addScaledVector(voidD, -voidO.z / voidD.z);
+    }
+    function overMe(e) { aimVoid(e); return voidRay.intersectObject(state.void.hitTarget, true).length > 0; }
+    listen(dc, "pointerdown", function (e) {
+      if (!inVoid || !state.void || !overMe(e)) return;
+      var p = voidPoint(e); if (!p) return;
+      state.void.grab(p); dc.style.cursor = "grabbing"; e.preventDefault();
+      try { dc.setPointerCapture(e.pointerId); } catch (err) { /* not supported */ }
+    });
+    listen(dc, "pointermove", function (e) {
+      if (!inVoid || !state.void) return;
+      if (state.void.isGrabbed()) { var p = voidPoint(e); if (p) state.void.drag(p); }
+      else if (e.pointerType === "mouse") dc.style.cursor = overMe(e) ? "grab" : "default";
+    });
+    function letGo() { if (state.void && state.void.isGrabbed()) { state.void.release(); dc.style.cursor = inVoid ? "grab" : ""; } }
+    listen(dc, "pointerup", letGo); listen(dc, "pointercancel", letGo);
+    function outOfVoid() { if (state.void) state.void.release(); dc.style.cursor = ""; root.classList.remove("in-void"); }
     function enterVoid() {
       if (section !== "monologue") return;
       inVoid = true; lastSectionCam = state.void.cam; blendFrom = 1; sectionAt = performance.now() - 1e6;
+      root.classList.add("in-void"); dc.style.cursor = "default";
       panelBack.textContent = "\u2190 back out";
       panel.monologue();
       later(function () { wipe(false); }, 80);
@@ -268,10 +297,10 @@ export function mountCrayonWorld(root, opts) {
       // out of the void: blot over, cut back to my face, then pull out to home
       if (section === "monologue" && inVoid && !reduce && !wipeEl.classList.contains("in")) {
         panelEl.hidden = true; wipe(true);
-        later(function () { inVoid = false; lastSectionCam = faceCamSaved; blendFrom = 1; leaveSection(); wipe(false); }, 380);
+        later(function () { inVoid = false; outOfVoid(); lastSectionCam = faceCamSaved; blendFrom = 1; leaveSection(); wipe(false); }, 380);
         return;
       }
-      if (section === "monologue") { inVoid = false; lastSectionCam = faceCamSaved || lastSectionCam; }
+      if (section === "monologue") { inVoid = false; outOfVoid(); lastSectionCam = faceCamSaved || lastSectionCam; }
       blendFrom = sectionBlend; leaveSection();
     }
     function leaveSection() {

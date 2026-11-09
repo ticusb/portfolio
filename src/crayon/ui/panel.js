@@ -62,7 +62,7 @@ export function createPanel(byId, PROJECTS, onPick, THOUGHTS) {
   // the monologue, read out in the void inside my head
   function monologuePanel() {
     fillPanel("monologue", function (b) {
-      b.appendChild(el("p", "panel-lede", "You're inside my head now. This is where the thoughts float."));
+      b.appendChild(el("p", "panel-lede", "You're inside my head now. This is where the thoughts float. (Go on, grab me.)"));
       var list = (THOUGHTS || []).filter(function (t) { return t && typeof t.text === "string" && t.text.trim(); });
       if (!list.length) { b.appendChild(el("p", "panel-meta", "it's empty in here right now. come back later.")); return; }
       var ul = el("ul", "panel-thoughts");

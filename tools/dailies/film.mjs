@@ -5,7 +5,8 @@
 //   node tools/dailies/film.mjs --name ski-intro --world ski --dur 17 \
 //     --act "0.3:click #start" [--url http://localhost:3000/] [--size 1280x800] [--phone] [--from 4] [--every 1] [--png]
 //
-// Actions are "<seconds>:<kind> <arg>": click <selector> | key <Key> | mouse <x> <y> | tap <x> <y> | js <code>.
+// Actions are "<seconds>:<kind> <arg>": click <selector> | key <Key> | mouse <x> <y> | tap <x> <y> | js <code>
+// | down <x> <y> | move <x> <y> | up <x> <y> (a held-button drag).
 // Seconds count from when the clock starts (about 2.5s after the page loads).
 import { spawn } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
@@ -64,7 +65,11 @@ async function act(a) {
   if (a.kind === "click") await evaluate(`document.querySelector(${JSON.stringify(a.arg)}).click()`);
   else if (a.kind === "key") await evaluate(`window.dispatchEvent(new KeyboardEvent('keydown',{key:${JSON.stringify(a.arg)}}))`);
   else if (a.kind === "js") await evaluate(a.arg);
-  else if (a.kind === "mouse" || a.kind === "tap") {
+  else if (a.kind === "down" || a.kind === "move" || a.kind === "up") {
+    const [x, y] = a.arg.split(/\s+/).map(Number);
+    const type = { down: "mousePressed", move: "mouseMoved", up: "mouseReleased" }[a.kind];
+    await send("Input.dispatchMouseEvent", { type, x, y, button: "left", buttons: a.kind === "up" ? 0 : 1, clickCount: 1 });
+  } else if (a.kind === "mouse" || a.kind === "tap") {
     const [x, y] = a.arg.split(/\s+/).map(Number);
     await send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
     if (a.kind === "tap") { await send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 }); await send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 }); }

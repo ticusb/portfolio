@@ -182,4 +182,6 @@ html.crayon-lock, html.crayon-lock body { overflow: hidden; height: 100%; }
 .crayon-root.night.sim { background-color: #0c0c0c; }
 .crayon-root.night::before { background-image: radial-gradient(circle, #262626 1.5px, transparent 1.5px); }
 @media (prefers-reduced-motion: reduce) { .crayon-root, .crayon-root::before, .crayon-root .paper-grain { transition: none; } }
+/* in the void you drag me around: don't let the browser treat it as a scroll */
+.crayon-root.in-void #doodle { touch-action: none; }
 
