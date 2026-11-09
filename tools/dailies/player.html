@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dailies</title>
+<style>
+  :root { --bg: #f4efe4; --ink: #1d1a24; --muted: #5a5466; --line: #d6cfbf; --accent: #e8412c; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #16141c; --ink: #f1ecdf; --muted: #b3acbf; --line: #34303f; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-monospace, Menlo, monospace; padding: 16px; }
+  h1 { font-size: 16px; margin: 0 0 8px; }
+  .meta { color: var(--muted); margin: 0 0 12px; }
+  .stage { position: relative; max-width: 100%; }
+  .stage img { display: block; max-width: 100%; height: auto; border: 1px solid var(--line); }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin: 12px 0; }
+  button, select { font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--muted); border-radius: 6px; padding: 6px 10px; min-height: 36px; cursor: pointer; }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .scrub { position: relative; width: 100%; }
+  .scrub input { width: 100%; }
+  .marks { position: relative; height: 22px; }
+  .marks span { position: absolute; top: 0; transform: translateX(-50%); font-size: 11px; color: var(--muted); white-space: nowrap; border-left: 1px solid var(--muted); padding-left: 3px; transform: none; }
+  .clock { min-width: 15ch; }
+</style>
+</head>
+<body>
+<h1 id="title">dailies</h1>
+<p class="meta" id="meta"></p>
+<div class="stage"><img id="frame" alt="current frame of the film"></div>
+<div class="scrub">
+  <label for="pos" class="meta">position</label>
+  <input id="pos" type="range" min="0" value="0" step="1">
+  <div class="marks" id="marks" aria-hidden="true"></div>
+</div>
+<div class="bar">
+  <button id="play" type="button">pause</button>
+  <button id="back" type="button" aria-label="previous frame">&larr;</button>
+  <button id="fwd" type="button" aria-label="next frame">&rarr;</button>
+  <label for="speed">speed</label>
+  <select id="speed"><option value="1">1x</option><option value="0.5">0.5x</option><option value="0.25">0.25x</option><option value="0.1">0.1x</option></select>
+  <label><input id="loop" type="checkbox" checked> loop</label>
+  <span class="clock" id="clock" aria-live="off"></span>
+</div>
+<p class="meta">space = play/pause, arrows = step a frame</p>
+<script>
+var META = /*META*/null;
+var img = document.getElementById("frame"), pos = document.getElementById("pos"), clock = document.getElementById("clock");
+var playBtn = document.getElementById("play"), speedSel = document.getElementById("speed"), loopBox = document.getElementById("loop");
+var F = META.frames, i = 0, playing = true, acc = 0, last = performance.now();
+document.getElementById("title").textContent = META.name;
+document.getElementById("meta").textContent = F.length + " frames @ " + META.fps + "fps · " + META.gpu + " · " + META.made;
+pos.max = F.length - 1;
+var cache = F.map(function (f) { var im = new Image(); im.src = f.file; return im; });
+var t0 = F[0].t, t1 = F[F.length - 1].t, marks = document.getElementById("marks");
+(META.beats || []).forEach(function (b) {
+  if (b.at < t0 || b.at > t1) return;
+  var s = document.createElement("span"); s.textContent = b.name; s.style.left = ((b.at - t0) / (t1 - t0) * 100) + "%"; marks.appendChild(s);
+});
+function show(n) {
+  i = Math.max(0, Math.min(F.length - 1, n)); img.src = F[i].file; pos.value = i;
+  var beat = ""; (META.beats || []).forEach(function (b) { if (F[i].t >= b.at) beat = b.name; });
+  clock.textContent = F[i].t.toFixed(2) + "s  " + beat;
+}
+function setPlaying(p) { playing = p; playBtn.textContent = p ? "pause" : "play"; last = performance.now(); }
+playBtn.onclick = function () { setPlaying(!playing); };
+document.getElementById("back").onclick = function () { setPlaying(false); show(i - 1); };
+document.getElementById("fwd").onclick = function () { setPlaying(false); show(i + 1); };
+pos.oninput = function () { setPlaying(false); show(Number(pos.value)); };
+document.addEventListener("keydown", function (e) {
+  if (e.target.tagName === "SELECT" || e.target.tagName === "INPUT" && e.target.type !== "range") return;
+  if (e.key === " ") { e.preventDefault(); setPlaying(!playing); }
+  if (e.key === "ArrowLeft") { e.preventDefault(); setPlaying(false); show(i - 1); }
+  if (e.key === "ArrowRight") { e.preventDefault(); setPlaying(false); show(i + 1); }
+});
+function loop(now) {
+  if (playing) {
+    acc += (now - last) * Number(speedSel.value);
+    var step = 1000 / META.fps;
+    while (acc >= step) { acc -= step; if (i + 1 >= F.length) { if (loopBox.checked) show(0); else { setPlaying(false); break; } } else show(i + 1); }
+  }
+  last = now; requestAnimationFrame(loop);
+}
+show(0); requestAnimationFrame(loop);
+</script>
+</body>
+</html>

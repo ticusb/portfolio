@@ -49,3 +49,6 @@ yarn-error.log*
 CLAUDE.md
 .vercel
 .env*.local
+
+# dailies films are local review renders
+tools/dailies/films/

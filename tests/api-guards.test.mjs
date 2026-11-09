@@ -219,3 +219,26 @@ test("add-song fails closed when the rate-limit store errors", async (t) => {
     assert.deepEqual(res.body, { error: "temporarily unavailable" });
     assert.equal(calls.length, 1);
 });
+
+// inputs are checked at the boundary: a wrong type is a 400, never a crash
+test("add-song rejects a uri that isn't a string with 400", async (t) => {
+    mockFetch(t, async () => storeResponse(1));
+    const handler = await loadAddSong();
+    for (const body of [{ uri: 42 }, { uri: ["spotify:track:aaaaaaaaaaaaaaaaaaaaaa"] }, "not json", null]) {
+        const res = response();
+        await handler(request({ method: "POST", headers: { origin: "https://ticusb.com" }, body }), res);
+        assert.equal(res.statusCode, 400, `body ${JSON.stringify(body)}`);
+    }
+});
+
+test("search-songs rejects a repeated, missing or blank q with 400", async (t) => {
+    mockFetch(t, async () => storeResponse(1));
+    process.env.VERCEL_ENV = "production";
+    process.env.EDGE_SHARED_SECRET = "edge-secret";
+    const { default: handler } = await import("../api/search-songs.js");
+    for (const query of [{ q: ["a", "b"] }, {}, { q: "   " }]) {
+        const res = response();
+        await handler(request({ query }), res);
+        assert.equal(res.statusCode, 400, `query ${JSON.stringify(query)}`);
+    }
+});
