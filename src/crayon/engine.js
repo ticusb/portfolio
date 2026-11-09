@@ -48,6 +48,8 @@ export function mountCrayonWorld(root, opts) {
   var alive = true, rafId = 0, wobbleTimer = 0;
   function byId(id) { return root.querySelector("#" + id); }
   function listen(target, type, fn, opts) {
+    // late callers (iOS answering the tilt permission prompt after you've left) would add a listener nobody removes
+    if (!alive) return;
     target.addEventListener(type, fn, opts);
     cleanups.push(function () { target.removeEventListener(type, fn, opts); });
   }
