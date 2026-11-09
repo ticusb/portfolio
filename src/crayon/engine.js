@@ -28,7 +28,8 @@ import { createPanel, el } from "./ui/panel";
 
 const PROJECTS = projectData.filter(function (p) { return !p.draft; });
 
-const FACE_URL = (process.env.PUBLIC_URL || "") + "/crayon/face.png";
+// a JPEG (85KB, the photo has no transparency); face.png stays as the source for tools/icon
+const FACE_URL = (process.env.PUBLIC_URL || "") + "/crayon/face.jpg";
 
 // crayon-drawn icons for the world toggle (static, trusted markup)
 const MOON_ICON = '<svg viewBox="0 0 48 48" width="34" height="34" aria-hidden="true" focusable="false"><g filter="url(#crayon)"><path d="M29 5a19 19 0 1 0 14 31A16 16 0 0 1 29 5z" fill="#ffe27a" stroke="#2b2340" stroke-width="3.5" stroke-linejoin="round"/><circle cx="20" cy="27" r="2.6" fill="#e0a800"/><circle cx="26" cy="36" r="1.8" fill="#e0a800"/></g></svg>';
