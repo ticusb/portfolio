@@ -70,6 +70,7 @@ export function createSpace(kit) {
       var tc = [["#ffe27a", "#e0a800"], ["#ffc93c", "#ff8c1a"], ["#ffb070", "#e8412c"], ["#f7a1c4", "#c2185b"], ["#c8a8ff", "#7a4fc9"], ["#9db8ff", "#2f7de1"]];
       for (var ti = 1; ti <= 6; ti++) put(crayon(sphere, tc[ti - 1][0], tc[ti - 1][1], { noLine: true, lump: 0.25, order: 30 }), sh, [tailDir.x * ti * 0.42, tailDir.y * ti * 0.42, 0], 0.3 - ti * 0.04);
       kit.bake(sh); s.shoot = put(sh, w, [14, 8, -14]);
+      s.comet = s.shoot;
       s.focus = new THREE.Vector3(2, 0.8, -3);
       s.homeCam = { pos: [2, 1.8, 11.5], look: [2, 1.9, -3], fov: 42 };
       // projects: a patch of sky with one constellation per project
@@ -119,7 +120,7 @@ export function createSpace(kit) {
     update: function (s, t, info) {
       var T = info.T, home = info.home, me = s.me;
       // the fly-by: in from the left, brakes over me, beam on
-      var fly = smooth(4.4, 7.6, T);
+      var fly = info.mode === "home" ? 1 : smooth(4.4, 7.6, T); // skipped straight home: the UFO is already there
       s.ufo.position.set(-40 + 42 * fly, 4.8 + Math.sin(t * 1.1) * 0.25, -3);
       s.ufo.rotation.set(0, t * 0.5, -0.3 * (1 - fly) * (fly > 0 && fly < 1 ? 1 : 0) + Math.sin(t * 0.8) * 0.05);
       s.lights.forEach(function (l, i) { l.scale.setScalar(0.2 * (Math.sin(t * 6 + i * 1.3) > 0 ? 1.15 : 0.8)); });
@@ -153,8 +154,10 @@ export function createSpace(kit) {
       });
       s.planet.rotation.y = t * 0.15;
       s.moon.position.y = 5 + Math.sin(t * 0.4) * 0.3;
-      var st = (t * 0.2) % 1;
-      s.shoot.position.set(14 - st * 32, 8 - st * 6, -14);
+      // the comet streaks across every 7s and flies straight off the edge of the sim (the engine tears the hole)
+      var st = (t % 7) / 3.2;
+      s.shoot.visible = st <= 1;
+      s.shoot.position.set(16 - st * 40, 8.5 - st * 7.5, -14);
       s.stars.forEach(function (sr, i) { if (i % 5 === 0) sr.visible = Math.sin(t * 2 + i) > -0.6; });
       s.focus.set(me.group.position.x, me.group.position.y + 1.0, -3);
       s.void.update(t, info.sbKey === "monologue" && info.sb > 0);

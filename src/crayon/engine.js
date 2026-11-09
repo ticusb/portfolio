@@ -121,7 +121,7 @@ export function mountCrayonWorld(root, opts) {
 
     var shared = {
       uTime: { value: 0 }, uDpr: { value: dpr }, uRes: { value: new THREE.Vector2(1, 1) },
-      uReveal: { value: reduce ? 1 : 0 }, uHalfFov: { value: new THREE.Vector2(0.1, 0.07) }, uCursor: { value: new THREE.Vector2(0, 0) }, uSim: { value: 0 }
+      uReveal: { value: reduce ? 1 : 0 }, uHalfFov: { value: new THREE.Vector2(0.1, 0.07) }, uCursor: { value: new THREE.Vector2(0, 0) }, uHit: { value: new THREE.Vector3(0, 0, 0) }, uSim: { value: 0 }
     };
 
     var kit = createKit(shared, coarse);
@@ -320,6 +320,7 @@ export function mountCrayonWorld(root, opts) {
     function markSeen() { try { localStorage.setItem("crayonSeen", "1"); } catch (e) { /* private mode */ } }
     // "preparing the sim": on the gate I float on the old dot grid, unrendered. Clicking the crayon renders me
     // (uSim 1 -> 0) and flies me from the gate to my spot while the world draws itself around me.
+    var cometWasIn = false, lastComet = new THREE.Vector3(), hitAt = -1e9;
     var simFrom = null, heroAnchor = null, heroAt = new THREE.Vector3(), anchorV = new THREE.Vector3(), rayV = new THREE.Vector3(), fwdV = new THREE.Vector3();
     function gateAnchor() {
       var portrait = camera.aspect < 1, H = 2.3 * state.hero.scale.y;
@@ -477,6 +478,19 @@ export function mountCrayonWorld(root, opts) {
       else rig.aim(c, state, walk, homeBlend, sectionBlend, lastSectionCam, look);
 
       current.update(state, reduce ? 0 : t, { p: info.p, cover: coverCut, section: section, selected: selected, sb: sectionBlend, sbKey: lastSectionKey, T: T, mode: mode, home: homeBlend, homeT: mode === "home" ? (reduce ? 99 : (now - homeAt) / 1000) : 0, burst: reduce ? null : burst, aspect: camera.aspect, progress: progress });
+      // the edge of the sim: when something flagged (state.comet) leaves the frame, a hole of code tears open where it went out
+      if (state.comet && !reduce) {
+        state.comet.getWorldPosition(projV); projV.project(camera);
+        var W = window.innerWidth, Hh = window.innerHeight, inside = state.comet.visible && Math.abs(projV.x) <= 1 && Math.abs(projV.y) <= 1 && projV.z < 1;
+        if (cometWasIn && !inside && state.comet.visible && mode === "home" && !section) {
+          hitAt = now;
+          shared.uHit.value.x = Math.max(0, Math.min(W, (lastComet.x + 1) / 2 * W));
+          shared.uHit.value.y = Math.max(0, Math.min(Hh, (lastComet.y + 1) / 2 * Hh));
+        }
+        cometWasIn = inside; lastComet.copy(projV);
+      }
+      var hk = (now - hitAt) / 1000;
+      shared.uHit.value.z = hk < 0 ? 0 : hk < 0.25 ? smooth(0, 0.25, hk) : hk < 0.9 ? 1 : 1 - smooth(0.9, 1.6, hk);
       if (state.hero) {
         // the hero's flight from the gate: hold at the gate anchor (bobbing), then ease to where the world put me
         var fly = mode === "gate" ? 0 : simFrom ? smooth(0, 1, (now - simFrom - 200) / 1500) : 1;

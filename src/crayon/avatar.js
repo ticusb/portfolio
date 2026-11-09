@@ -17,7 +17,7 @@ export function createAvatar(kit, shared, faceTex) {
       uniforms: {
         uFace: { value: faceTex }, uSkin: { value: new THREE.Color("#d99a86") }, uHair: { value: new THREE.Color("#2b211c") },
         uReveal: shared.uReveal, uDelay: { value: Math.min(1, order / TOTAL) }, uTime: shared.uTime, uDpr: shared.uDpr,
-        uRes: shared.uRes, uCursor: shared.uCursor, uSim: shared.uSim, uKeep: { value: 0 }
+        uRes: shared.uRes, uCursor: shared.uCursor, uHit: shared.uHit, uSim: shared.uSim, uKeep: { value: 0 }
       }
     });
     put(h, head, [0, 0, 0], [0.66, 0.72, 0.64]);
