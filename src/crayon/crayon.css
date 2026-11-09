@@ -185,6 +185,9 @@ html.crayon-lock, html.crayon-lock body { overflow: hidden; height: 100%; }
 .crayon-root .panel-thoughts { list-style: none; margin: 8px 0 12px; padding: 0; display: flex; flex-direction: column; gap: 14px; }
 .crayon-root .panel-thoughts p { margin: 0; }
 @media (prefers-reduced-motion: reduce) { .crayon-root .void-wipe { display: none; } }
+/* phones: the full-screen blot keeps its wobbly crayon edge but not the crayon tooth. Safari runs SVG filters at
+   device pixels, so on a 3x screen the tooth turns into coarse streaks with the scene showing through the gaps */
+@media (pointer: coarse) { .crayon-root .void-wipe { filter: url(#crayon-edge); } }
 
 /* preparing the sim: the gate is the old site (near-white, dot grid). Picking up the crayon fades it into paper */
 .crayon-root { transition: background-color 0.9s ease; }
