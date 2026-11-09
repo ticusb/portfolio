@@ -111,7 +111,8 @@ export function mountCrayonWorld(root, opts) {
     var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, alpha: true });
     // start sharp, then drop resolution if this machine can't keep up
     var coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-    var dpr = Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : 1.75);
+    // phones get 2x: the crayon tooth and strokes are a pixel or two wide, and below ~1.25x they turn to grit
+    var dpr = Math.min(window.devicePixelRatio || 1, coarse ? 2 : 1.75);
     renderer.setPixelRatio(dpr);
     renderer.setClearColor(0x000000, 0);
     var scene = new THREE.Scene();
@@ -353,8 +354,14 @@ export function mountCrayonWorld(root, opts) {
     var simFrom = null, heroAnchor = null, heroAt = new THREE.Vector3(), anchorV = new THREE.Vector3(), rayV = new THREE.Vector3(), fwdV = new THREE.Vector3();
     function gateAnchor() {
       var portrait = camera.aspect < 1, H = 2.3 * state.hero.scale.y;
-      // landscape: the clear lower-left, under the title card; portrait: between the card and the crayon
-      var frac = portrait ? 0.16 : 0.34, nx = portrait ? 0 : -0.56, ny = portrait ? -0.3 : -0.34;
+      // landscape: the clear lower-left, under the title card. portrait: in the actual gap between the last
+      // line of the card and the crayon, measured from the page (the skip link moves the crayon up)
+      var frac = 0.34, nx = -0.56, ny = -0.34;
+      if (portrait) {
+        var vh = window.innerHeight, top = byId("s-night").getBoundingClientRect().bottom, bot = byId("start").getBoundingClientRect().top;
+        frac = Math.min(0.24, Math.max(0.1, (bot - top) * 0.85 / vh));
+        nx = 0; ny = 1 - (top + bot) / vh;
+      }
       var d = H / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * frac);
       camera.getWorldDirection(fwdV);
       rayV.set(nx, ny, 0.5).unproject(camera).sub(camera.position).normalize();
@@ -363,8 +370,44 @@ export function mountCrayonWorld(root, opts) {
       anchorV.y -= H / 2;
       return anchorV;
     }
+    // on the gate you can grab me too: I dangle from where you hold me and drift back to my spot when let go
+    var gd = { grabbed: false, off: new THREE.Vector3(), vel: new THREE.Vector3(), target: new THREE.Vector3(), grabAt: new THREE.Vector3(), plane: new THREE.Plane(), hit: new THREE.Vector3(), swing: 0, swingV: 0, flail: 0, tmp: new THREE.Vector3() };
+    function heroHit(e) {
+      aimVoid(e);
+      var h = voidRay.intersectObject(state.hero, true)[0];
+      return h ? h.point : null;
+    }
+    listen(gateEl, "pointerdown", function (e) {
+      if (mode !== "gate" || !state.hero || reduce || e.target !== gateEl) return;
+      var p = heroHit(e); if (!p) return;
+      camera.getWorldDirection(fwdV);
+      gd.plane.setFromNormalAndCoplanarPoint(fwdV, p);
+      gd.grabAt.copy(world.worldToLocal(p.clone())).sub(gd.off);
+      gd.grabbed = true; gd.target.copy(gd.off); gateEl.style.cursor = "grabbing"; e.preventDefault();
+      try { gateEl.setPointerCapture(e.pointerId); } catch (err) { /* not supported */ }
+    });
+    listen(gateEl, "pointermove", function (e) {
+      if (mode !== "gate" || !state.hero) return;
+      if (gd.grabbed) {
+        aimVoid(e);
+        if (voidRay.ray.intersectPlane(gd.plane, gd.hit)) gd.target.copy(world.worldToLocal(gd.hit)).sub(gd.grabAt);
+      } else if (e.pointerType === "mouse") gateEl.style.cursor = e.target === gateEl && heroHit(e) ? "grab" : "";
+    });
+    function dropHero() { if (gd.grabbed) { gd.grabbed = false; gateEl.style.cursor = ""; } }
+    listen(gateEl, "pointerup", dropHero); listen(gateEl, "pointercancel", dropHero);
+    function stepGateDrag(dt) {
+      dt = Math.min(0.05, Math.max(0, dt));
+      if (!gd.grabbed) gd.target.set(0, 0, 0);
+      var k = gd.grabbed ? 70 : 9, damp = gd.grabbed ? 13 : 3.6;
+      gd.tmp.copy(gd.target).sub(gd.off).multiplyScalar(k).addScaledVector(gd.vel, -damp);
+      gd.vel.addScaledVector(gd.tmp, dt); gd.off.addScaledVector(gd.vel, dt);
+      gd.swingV += (-gd.swing * 30 - gd.swingV * 3.2 - gd.vel.x * 9) * dt; gd.swing = Math.max(-1.1, Math.min(1.1, gd.swing + gd.swingV * dt));
+      gd.flail += ((gd.grabbed ? 1 : 0) + Math.min(1, gd.vel.length() * 0.25) - gd.flail) * Math.min(1, dt * 4);
+      gd.flail = Math.min(1, gd.flail);
+    }
     function startIntro(skip) {
       var fromGate = mode === "gate";
+      dropHero();
       started = true; mode = "intro"; introAt = performance.now(); t0 = introAt;
       var instant = reduce || skip === true;
       if (!instant && fromGate) simFrom = performance.now(); else simFrom = null;
@@ -444,17 +487,18 @@ export function mountCrayonWorld(root, opts) {
         mode = "home"; homeAt = performance.now() - 2000; replayEl.hidden = false; announce(); markSeen();
       }, 380);
     }
-    // the quality ladder: watch the average frame time; if this device can't hold ~45fps, step down. First
-    // resolution (to 1x, then 0.75x on phones), then the second outline pass. It never steps back up,
+    // the quality ladder: watch the average frame time; if this device can't hold ~25fps, step down. First
+    // resolution (to 1x, or 1.25x on phones), then the second outline pass. It never steps back up,
     // so it can't flicker between settings.
     var frameCount = 0, ema = 16, lastStep = 0, thinLines = false;
-    var DPR_FLOOR = coarse ? 0.75 : 1;
+    var DPR_FLOOR = coarse ? 1.25 : 1;
     function thinOutlines() { world.traverse(function (o) { if (o.userData.pass2) o.visible = false; }); }
     function adapt(dtMs, now) {
       frameCount++;
       if (dtMs > 90) return; // a hiccup (tab switch, GC), not the steady cost
       ema += (dtMs - ema) * 0.05;
-      if (frameCount < 60 || ema < 22 || now - lastStep < 1500) return;
+      // phones often cap animation at 30fps (low power mode): a steady 33ms isn't "slow". Only step down below ~25fps
+      if (frameCount < 60 || ema < 38 || now - lastStep < 1500) return;
       lastStep = now; ema = 16;
       if (dpr > DPR_FLOOR) { dpr = Math.max(DPR_FLOOR, dpr - 0.25); renderer.setPixelRatio(dpr); shared.uDpr.value = dpr; resize(); }
       else if (!thinLines) { thinLines = true; thinOutlines(); }
@@ -526,22 +570,47 @@ export function mountCrayonWorld(root, opts) {
         if (mode === "gate" || !heroAnchor) heroAnchor = (heroAnchor || new THREE.Vector3()).copy(gateAnchor());
         if (fly < 1) {
           var bob = reduce ? 0 : Math.sin(t * 1.3) * 0.18 * state.hero.scale.y;
+          stepGateDrag(dtMs / 1000);
           heroAt.copy(state.hero.position);
-          state.hero.position.copy(heroAnchor).add(rayV.set(0, bob, 0)).lerp(heroAt, fly);
-          if (!reduce) { state.hero.rotation.y += Math.sin(t * 0.5) * 0.45 * (1 - fly); state.hero.rotation.z += Math.sin(t * 0.9) * 0.1 * (1 - fly); }
+          state.hero.position.copy(heroAnchor).add(rayV.set(0, bob, 0)).add(gd.off).lerp(heroAt, fly);
+          if (!reduce) {
+            var calm = 1 - gd.flail;
+            state.hero.rotation.y += Math.sin(t * 0.5) * 0.45 * (1 - fly) * calm;
+            state.hero.rotation.z += (Math.sin(t * 0.9) * 0.1 * calm + gd.swing) * (1 - fly);
+            // swing from the head, not the feet: shift so the head stays where it's held
+            var hh = 1.62 * state.hero.scale.y, sw = gd.swing * (1 - fly);
+            state.hero.position.x += Math.sin(sw) * hh; state.hero.position.y += hh - Math.cos(sw) * hh;
+            if (state.me && gd.flail > 0.01) {
+              var kick = Math.sin(t * 15) * 0.8 * gd.flail * (1 - fly);
+              state.me.legs[0].rotation.x = kick; state.me.legs[1].rotation.x = -kick;
+              state.me.hands.forEach(function (h, k) { h.position.y += (0.5 + Math.sin(t * 13 + k) * 0.15) * gd.flail * (1 - fly); });
+            }
+          }
           state.hero.updateMatrixWorld(true);
         }
       }
       if (!reduce) { fadeDoodles(); drawPowder(); }
       renderer.render(scene, camera);
       if (section === "projects" && state.picks) {
+        // labels shuffle up so they don't sit on each other, and hide if they'd land behind the panel (phones)
+        var placed = [], panelTop = camera.aspect < 1 && !panelEl.hidden ? panelEl.getBoundingClientRect().top - 4 : Infinity;
         state.picks.forEach(function (pk) {
           if (!pk.label) return;
           pk.tip.getWorldPosition(projV); projV.project(camera);
-          pk.label.style.left = ((projV.x + 1) / 2 * window.innerWidth).toFixed(1) + "px";
-          pk.label.style.top = ((1 - projV.y) / 2 * window.innerHeight).toFixed(1) + "px";
+          var lx = (projV.x + 1) / 2 * window.innerWidth, ly = (1 - projV.y) / 2 * window.innerHeight;
+          if (!pk.lw) { pk.lw = pk.label.offsetWidth; pk.lh = pk.label.offsetHeight; }
+          var lw = pk.lw || 100, lh = pk.lh || 24;
+          lx = Math.max(lw / 2 + 6, Math.min(window.innerWidth - lw / 2 - 6, lx));
+          for (var tries = 0; tries < 5; tries++) {
+            var clash = placed.some(function (r) { return lx - lw / 2 < r[2] && lx + lw / 2 > r[0] && ly - lh < r[3] && ly > r[1]; });
+            if (!clash) break;
+            ly -= lh + 4;
+          }
+          placed.push([lx - lw / 2, ly - lh, lx + lw / 2, ly]);
+          pk.label.style.left = lx.toFixed(1) + "px";
+          pk.label.style.top = ly.toFixed(1) + "px";
           pk.label.classList.toggle("on", selected === pk.slug);
-          pk.label.style.visibility = projV.z < 1 && sectionBlend > 0.7 ? "visible" : "hidden";
+          pk.label.style.visibility = projV.z < 1 && sectionBlend > 0.7 && ly < panelTop ? "visible" : "hidden";
         });
       }
       if (state.anchors) {

@@ -23,7 +23,7 @@ export function createAvatar(kit, shared, faceTex) {
     put(h, head, [0, 0, 0], [0.66, 0.72, 0.64]);
     // the helmet: a shell over the whole head with an oval opening, so the photo face sits in a frame
     var shellC = astro ? ["#f4f4f0", "#9a9cab"] : ["#e8412c", "#8f1d10"];
-    put(crayon(sphere, shellC[0], shellC[1], { thick: 0.06, lump: 0.015, cut: [0.8, 0.92], order: order + 0.3 }), head, [0, 0, 0], [0.71, 0.78, 0.69]);
+    put(crayon(sphere, shellC[0], shellC[1], { thick: 0.06, lump: 0.008, cut: [0.8, 0.92], order: order + 0.3 }), head, [0, 0, 0], [0.74, 0.81, 0.72]); // roomy enough that my head doesn't poke through
     put(crayon(thinTorus, astro ? "#c4c8d4" : "#ffc93c", astro ? "#7a7d92" : "#c27a00", { thick: 0.03, lump: 0.02, order: order + 0.4 }), head, [0, -0.04, 0.4], [0.57, 0.72, 0.5], [-0.08, 0, 0]);
     if (astro) {
       put(crayon(sphere, "#cfefff", "#5b8fd6", { noLine: true, lump: 0, over: 0, alpha: 0.2, order: order + 0.5 }), head, [0, 0.02, 0.04], [0.86, 0.92, 0.86]);

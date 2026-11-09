@@ -100,7 +100,7 @@ export const fillFrag = [
   "  if (uCut.z > 0.5) { vec3 oc = normalize(vObj); if (oc.z > 0.0 && length(vec2(oc.x / uCut.x, (oc.y + 0.05) / uCut.y)) < 1.0) discard; }",
   "  if (uKeep > 0.5 && simFront(p, uSeed) < uSim) { gl_FragColor = vec4(simBody(vN, p), uAlpha); return; }",
   "  if (dissolve(p) > 0.5) { gl_FragColor = vec4(codeWall(p, uTime), 1.0); return; }",
-  "  if (uWash > 0.5) { float tw = noise(p*0.9)*0.5 + noise(p*0.31)*0.5; gl_FragColor = vec4(uColor * (0.965 + 0.05*tw) * (1.0 - 0.025*step(0.72, noise(p*0.01 + uSeed))), 1.0); return; }",
+  "  if (uWash > 0.5) { float tw = noise(p*0.9)*0.5 + noise(p*0.31)*0.5; gl_FragColor = vec4(uColor * (0.965 + 0.05*tw) * (1.0 - 0.012*smoothstep(0.62, 0.92, noise(p*0.01 + uSeed))), 1.0); return; }",
   "  float rn = noise(p*0.004 + uSeed);",
   "  vec2 q = rot(uAngle + (rn-0.5)*0.25) * p;",
   "  float wob = noise(q*vec2(0.004,0.012) + uSeed)*0.35;",

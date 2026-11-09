@@ -417,7 +417,7 @@ export function createSki(kit) {
       s.face = s.me.head;
       s.sections = {
         about: { cam: { pos: [M.x + 3.6, top + 1.2, M.z + 7.6], look: [M.x - 1.6, top - 0.3, M.z + 0.6], fov: 42 } },
-        projects: { cam: { pos: [GC.x + 1.4, GROUND + 4.6, GC.z + 10.5], look: [GC.x - 2.6, GROUND + 1.1, GC.z - 0.5], fov: 50 } },
+        projects: { cam: { pos: [GC.x + 1.4, GROUND + 4.6, GC.z + 10.5], look: [GC.x - 2.6, GROUND + 1.1, GC.z - 0.5], fov: 50, pull: 1.7 } },
         monologue: {}
       };
       kit.bakeAll(w, statics);

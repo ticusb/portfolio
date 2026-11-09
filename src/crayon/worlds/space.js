@@ -146,7 +146,11 @@ export function createSpace(kit) {
       // nav orbits once home
       s.anchors.forEach(function (n, i) {
         var a = t * 0.22 + i * Math.PI * 2 / 3, sx = Math.min(1, (info.aspect || 1.6) * 0.8);
-        n.obj.position.set(2 + Math.cos(a) * 5.4 * sx, 0.9 + Math.sin(a) * 2.0 + Math.sin(t * 0.9 + i) * 0.2, -3 + Math.sin(a) * 2.6);
+        if ((info.aspect || 1.6) < 1) {
+          // a phone is too narrow to orbit without passing in front of me: they hang in spots around me instead
+          var spot = [[-2.4, -1.7], [2.7, 1.1], [-2.6, 3.7]][i];
+          n.obj.position.set(2 + spot[0] + Math.sin(t * 0.5 + i) * 0.15, 0.9 + spot[1] + Math.sin(t * 0.9 + i) * 0.2, -3);
+        } else n.obj.position.set(2 + Math.cos(a) * 5.4 * sx, 0.9 + Math.sin(a) * 2.0 + Math.sin(t * 0.9 + i) * 0.2, -3 + Math.sin(a) * 2.6);
         n.obj.rotation.y = t * 0.6 + i;
         n.obj.scale.setScalar(Math.max(0.001, home));
         n.obj.visible = home > 0.001;

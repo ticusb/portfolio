@@ -64,6 +64,8 @@ export function createRig(camera, world, shared) {
     }
     if (sectionBlend > 0.001 && sectionCam) {
       var sc = sectionCam, se = sectionBlend * sectionBlend * (3 - 2 * sectionBlend);
+      // a phone is narrow: shots that need the width (pull) back further away along their own line
+      if (camera.aspect < 1 && sc.pull) sc = { pos: sc.look.map(function (l, i) { return l + (sc.pos[i] - l) * sc.pull; }), look: sc.look, fov: sc.fov };
       var aspectFix = camera.aspect < 1 ? 1.5 : 1;
       camera.position.lerp(new THREE.Vector3(sc.pos[0], sc.pos[1], sc.pos[2]).applyMatrix4(world.matrixWorld), se);
       lookV.lerp(new THREE.Vector3(sc.look[0], sc.look[1], sc.look[2]).applyMatrix4(world.matrixWorld), se);
@@ -75,6 +77,8 @@ export function createRig(camera, world, shared) {
     // the mouse can only turn your head a little past the frame, so the code shows as a margin
     camera.rotateY(-(look.yaw / 1.25) * shared.uHalfFov.value.x * 0.18);
     camera.rotateX(-(look.pitch / 0.55) * hv * 0.18);
+    // on a phone a section's panel is a bottom sheet, so tilt down to lift the world into the top half
+    if (camera.aspect < 1 && sectionBlend > 0.001) camera.rotateX(-hv * 0.3 * sectionBlend * sectionBlend * (3 - 2 * sectionBlend));
     camera.updateProjectionMatrix();
   }
   return { base: base, aim: aim, still: still, pose: pose };
