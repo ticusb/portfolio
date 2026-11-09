@@ -1,19 +1,14 @@
-import { lazy, Suspense } from "react";
 import { Routes, Route, useParams } from "react-router-dom";
+import CrayonWorld from "./components/CrayonWorld";
 import NotFound from "./components/NotFound";
-import "./App.css";
 
-// the whole site is the crayon world (three.js loads with it)
-const CrayonWorld = lazy(() => import("./components/CrayonWorld"));
+// the whole site is the crayon world, so three.js ships in the main bundle: lazy-loading it only added a second
+// round trip (main.js, then the world's chunk) before anything could draw
 
 // every section lives in the world; these routes just deep-link into one, so old links still land somewhere
 function World({ section }) {
     const { slug } = useParams();
-    return (
-        <Suspense fallback={<div className="crayon-loading" aria-hidden="true" />}>
-            <CrayonWorld section={section} project={slug} />
-        </Suspense>
-    );
+    return <CrayonWorld section={section} project={slug} />;
 }
 
 function App() {
