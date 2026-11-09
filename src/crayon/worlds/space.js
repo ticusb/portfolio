@@ -153,7 +153,7 @@ export function createSpace(kit) {
         n.obj.scale.setScalar(Math.max(0.001, home));
         n.obj.visible = home > 0.001;
         n.obj.userData.vis = home;
-        n.obj.userData.below = Math.sin(a) < -0.2; // on the under-my-feet side, hang the label below so it stays clear of me
+        n.obj.userData.drop = smooth(0.05, -0.55, Math.sin(a)); // on the under-my-feet side the label glides below its object
       });
       s.planet.rotation.y = t * 0.15;
       s.moon.position.y = 5 + Math.sin(t * 0.4) * 0.3;

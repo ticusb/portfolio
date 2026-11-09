@@ -30,6 +30,10 @@ const PROJECTS = projectData.filter(function (p) { return !p.draft; });
 
 const FACE_URL = (process.env.PUBLIC_URL || "") + "/crayon/face.png";
 
+// crayon-drawn icons for the world toggle (static, trusted markup)
+const MOON_ICON = '<svg viewBox="0 0 48 48" width="34" height="34" aria-hidden="true" focusable="false"><g filter="url(#crayon)"><path d="M29 5a19 19 0 1 0 14 31A16 16 0 0 1 29 5z" fill="#ffe27a" stroke="#2b2340" stroke-width="3.5" stroke-linejoin="round"/><circle cx="20" cy="27" r="2.6" fill="#e0a800"/><circle cx="26" cy="36" r="1.8" fill="#e0a800"/></g></svg>';
+const SUN_ICON = '<svg viewBox="0 0 48 48" width="34" height="34" aria-hidden="true" focusable="false"><g filter="url(#crayon)" stroke-linecap="round"><g stroke="#ff9f1c" stroke-width="4"><path d="M24 3v7M24 38v7M3 24h7M38 24h7M9 9l5 5M34 34l5 5M39 9l-5 5M14 34l-5 5"/></g><circle cx="24" cy="24" r="10" fill="#ffc93c" stroke="#2b2340" stroke-width="3.5"/></g></svg>';
+
 // dailies: in dev, or with ?dailies in the URL, the intro can start at a beat (?beat=jump) and the beat
 // timings are published on window.__beats for tools/dailies/film.mjs to mark on its timeline
 function dailiesParams() {
@@ -188,7 +192,10 @@ export function mountCrayonWorld(root, opts) {
       t0 = started ? performance.now() : Infinity;
       shared.uReveal.value = reduce ? 1 : 0;
       root.classList.toggle("night", name === "space");
-      flip.textContent = name === "space" ? "go skiing ☀" : "go to space ☾";
+      // the toggle is an icon of where it takes you: a moon from the snow, a sun from space
+      flip.innerHTML = name === "space" ? SUN_ICON : MOON_ICON;
+      flip.setAttribute("aria-label", name === "space" ? "Switch to skiing" : "Switch to space");
+      flip.title = name === "space" ? "go skiing" : "go to space";
       progress = 0;
       var navEls = document.querySelectorAll("#worldnav a");
       navEls.forEach(function (a) {
@@ -353,9 +360,9 @@ export function mountCrayonWorld(root, opts) {
     var simFrom = null, heroAnchor = null, heroAt = new THREE.Vector3(), anchorV = new THREE.Vector3(), rayV = new THREE.Vector3(), fwdV = new THREE.Vector3();
     function gateAnchor() {
       var portrait = camera.aspect < 1, H = 2.3 * state.hero.scale.y;
-      // landscape: the clear lower-left, under the title card. portrait: in the actual gap between the last
-      // line of the card and the crayon, measured from the page (the skip link moves the crayon up)
-      var frac = 0.34, nx = -0.56, ny = -0.34;
+      // landscape: big on the right half, next to the title card. portrait: in the actual gap between the last
+      // line of the card and the crayon, measured from the page
+      var frac = 0.5, nx = 0.46, ny = -0.06;
       if (portrait) {
         var vh = window.innerHeight, top = byId("s-night").getBoundingClientRect().bottom, bot = byId("start").getBoundingClientRect().top;
         frac = Math.min(0.24, Math.max(0.1, (bot - top) * 0.85 / vh));
@@ -608,7 +615,8 @@ export function mountCrayonWorld(root, opts) {
           el.style.top = ((1 - projV.y) / 2 * window.innerHeight).toFixed(1) + "px";
           var vis = n.obj.userData.vis == null ? 1 : n.obj.userData.vis;
           el.style.opacity = vis.toFixed(2);
-          el.classList.toggle("below", !!n.obj.userData.below);
+          // a label can glide from above its object to below it (space: the far side of the orbit)
+          if (n.obj.userData.drop != null) el.style.transform = "translate(-50%, " + (-130 + 175 * n.obj.userData.drop).toFixed(1) + "%)";
           el.style.visibility = projV.z < 1 && vis > 0.05 ? "visible" : "hidden";
         });
       }
