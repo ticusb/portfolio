@@ -510,6 +510,9 @@ export function mountCrayonWorld(root, opts) {
       if (mq.addEventListener) listen(mq, "change", followTheme);
     }
     var VIEW_H = 15;
+    // the space intro (the older dolly camera) frames tighter on a phone: at the full portrait height I was a
+    // speck in an empty sky until the UFO turned up
+    var PORTRAIT_INTRO = 0.6;
     function resize() {
       var w = window.innerWidth, h = window.innerHeight;
       renderer.setSize(w, h, false);
@@ -591,7 +594,7 @@ export function mountCrayonWorld(root, opts) {
 
 
       var c = current.cam, walk = 0;
-      if (beatTable) rig.still(look, reduce, f60); else walk = rig.base(c, progress, VIEW_H, now, reduce, look, f60).walk;
+      if (beatTable) rig.still(look, reduce, f60); else walk = rig.base(c, progress, camera.aspect < 1 ? VIEW_H * PORTRAIT_INTRO : VIEW_H, now, reduce, look, f60).walk;
       // push the cursor to an edge and a round bite of code opens there: the end of the simulation.
       var on = (mode === "gate" || look.ui || section) ? 0 : 1;
       var pxT = Math.sign(look.tx) * smooth(0.55, 1.0, Math.abs(look.tx)) * on;
