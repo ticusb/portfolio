@@ -639,8 +639,10 @@ export function mountCrayonWorld(root, opts) {
       if (!reduce) { fadeDoodles(f60); drawPowder(f60); }
       renderer.render(scene, camera);
       if (section === "projects" && state.picks) {
-        // labels shuffle up so they don't sit on each other, and hide if they'd land behind the panel (phones)
-        var placed = [], panelTop = camera.aspect < 1 && !panelEl.hidden ? panelEl.getBoundingClientRect().top - 4 : Infinity;
+        // labels shuffle up so they don't sit on each other,
+        // and hide any that would land behind the panel: its top edge on a phone (bottom sheet), its right edge on desktop
+        var placed = [], pr = panelEl.hidden ? null : panelEl.getBoundingClientRect();
+        var panelTop = pr && camera.aspect < 1 ? pr.top - 4 : Infinity, panelRight = pr && camera.aspect >= 1 ? pr.right + 4 : -Infinity;
         state.picks.forEach(function (pk) {
           if (!pk.label) return;
           pk.tip.getWorldPosition(projV); projV.project(camera);
@@ -657,7 +659,7 @@ export function mountCrayonWorld(root, opts) {
           pk.label.style.left = lx.toFixed(1) + "px";
           pk.label.style.top = ly.toFixed(1) + "px";
           pk.label.classList.toggle("on", selected === pk.slug);
-          pk.label.style.visibility = projV.z < 1 && sectionBlend > 0.7 && ly < panelTop ? "visible" : "hidden";
+          pk.label.style.visibility = projV.z < 1 && sectionBlend > 0.7 && ly < panelTop && lx - lw / 2 > panelRight ? "visible" : "hidden";
         });
       }
       if (state.anchors) {

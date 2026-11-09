@@ -119,7 +119,7 @@ export function createSpace(kit) {
       s.face = s.me.head;
       s.sections = {
         about: { cam: { pos: [3.4, 2.0, 3.6], look: [0.4, 1.7, -3], fov: 40 } },
-        projects: { cam: { pos: [-7.5, 5.4, 2.5], look: [-11.6, 6.6, -15], fov: 50 } },
+        projects: { cam: { pos: [-7.5, 5.4, 2.5], look: [-11.6, 6.6, -15], fov: 50, desk: { pull: 1.2, turn: 0.55 } } },
         monologue: {}
       };
       return s;

@@ -421,8 +421,10 @@ export function createSki(kit) {
       s.void = buildVoid(kit, w, false);
       s.face = s.me.head;
       s.sections = {
-        about: { cam: { pos: [M.x + 3.6, top + 1.2, M.z + 7.6], look: [M.x - 1.6, top - 0.3, M.z + 0.6], fov: 42 } },
-        projects: { cam: { pos: [GC.x + 1.4, GROUND + 4.6, GC.z + 10.5], look: [GC.x - 2.6, GROUND + 1.1, GC.z - 0.5], fov: 50, pull: 1.7 } },
+        // pull: on a phone, back off along the line (about kept cropping the top of my head there)
+        about: { cam: { pos: [M.x + 3.6, top + 1.2, M.z + 7.6], look: [M.x - 1.6, top - 0.3, M.z + 0.6], fov: 42, pull: 1.8 } },
+        // arc: the straight flight from home passes right up against a tree, so it bows up and back away from it
+        projects: { cam: { pos: [GC.x + 1.4, GROUND + 4.6, GC.z + 10.5], look: [GC.x - 2.6, GROUND + 1.1, GC.z - 0.5], fov: 50, pull: 1.7, arc: [0, 5, 7] } },
         monologue: {}
       };
       kit.bakeAll(w, statics);

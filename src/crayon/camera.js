@@ -69,9 +69,14 @@ export function createRig(camera, world, shared) {
     if (sectionBlend > 0.001 && sectionCam) {
       var sc = sectionCam, se = sectionBlend * sectionBlend * (3 - 2 * sectionBlend);
       // a phone is narrow: shots that need the width (pull) back further away along their own line
-      if (camera.aspect < 1 && sc.pull) sc = { pos: sc.look.map(function (l, i) { return l + (sc.pos[i] - l) * sc.pull; }), look: sc.look, fov: sc.fov };
+      if (camera.aspect < 1 && sc.pull) sc = { pos: sc.look.map(function (l, i) { return l + (sc.pos[i] - l) * sc.pull; }), look: sc.look, fov: sc.fov, arc: sc.arc };
+      // desktop has the panel down the left: desk.pull backs off along the shot's line so the subject fits beside it
+      else if (camera.aspect >= 1 && sc.desk && sc.desk.pull) sc = { pos: sc.look.map(function (l, i) { return l + (sc.pos[i] - l) * sc.desk.pull; }), look: sc.look, fov: sc.fov, arc: sc.arc };
       var aspectFix = camera.aspect < 1 ? 1.5 : 1;
       camera.position.lerp(new THREE.Vector3(sc.pos[0], sc.pos[1], sc.pos[2]).applyMatrix4(world.matrixWorld), se);
+      // arc [x, y, z]: bow the flight out by this much halfway there, to keep clear of whatever stands near the
+      // straight line (a tree right in front of the camera)
+      if (sc.arc) { var bow = Math.sin(Math.PI * se); camera.position.x += sc.arc[0] * bow; camera.position.y += sc.arc[1] * bow; camera.position.z += sc.arc[2] * bow; }
       lookV.lerp(new THREE.Vector3(sc.look[0], sc.look[1], sc.look[2]).applyMatrix4(world.matrixWorld), se);
       camera.fov = camera.fov + (Math.min(80, sc.fov * aspectFix) - camera.fov) * se;
     }
@@ -90,6 +95,12 @@ export function createRig(camera, world, shared) {
     camera.rotateX(-(look.pitch / 0.55) * hv * 0.18);
     // on a phone a section's panel is a bottom sheet, so tilt down to lift the world into the top half
     if (camera.aspect < 1 && sectionBlend > 0.001) camera.rotateX(-hv * 0.3 * sectionBlend * sectionBlend * (3 - 2 * sectionBlend));
+    // and on desktop, desk.turn swings the view so the subject slides right, out from behind the panel: by
+    // desk.turn x the panel's share of the screen (the panel is min(430px, 44vw) + 16px, see .panel in crayon.css)
+    else if (sectionBlend > 0.001 && sectionCam && sectionCam.desk && sectionCam.desk.turn) {
+      var W = window.innerWidth, panelFrac = Math.min(1, (16 + Math.min(430, 0.44 * W)) / W);
+      camera.rotateY(Math.atan(sectionCam.desk.turn * panelFrac * Math.tan(shared.uHalfFov.value.x)) * sectionBlend * sectionBlend * (3 - 2 * sectionBlend));
+    }
     camera.updateProjectionMatrix();
   }
   var travel = null;
