@@ -1,0 +1,53 @@
+.text-page {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 120px 24px 80px;
+    padding-left: max(24px, env(safe-area-inset-left, 0px));
+    padding-right: max(24px, env(safe-area-inset-right, 0px));
+}
+.text-page h1 {
+    font-family: var(--font-mono);
+    font-size: clamp(36px, 7vw, 56px);
+    line-height: 1.1;
+    margin-bottom: 16px;
+}
+.text-page h2 {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    margin: 40px 0 12px;
+    color: var(--text-muted);
+}
+.text-page p {
+    margin-bottom: 12px;
+}
+.text-page-lede {
+    font-size: 20px;
+}
+.text-page-stack div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+}
+.text-page-stack dt {
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    min-width: 100px;
+}
+.text-page-links {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+.text-page a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.text-page a:hover {
+    color: var(--accent);
+}
+.text-page-back {
+    margin-top: 48px;
+}

@@ -10,13 +10,16 @@ my personal portfolio. live at [ticusb.com](https://ticusb.com).
 
 ## Pages
 
-- **Home** — hero, about, stack, and a "currently building" section
+- **Home** — the crayon world: click the crayon, watch the intro (a ski run, or a UFO abduction in space), then land on a scene where the nav lives in the world. Light mode skis, dark mode goes to space.
+- **About** — the short version, plus what I work with
+- **Monologue** — me thinking out loud (empty for now)
 - **Projects** — full-viewport scroll-reveal showcase
 
 ## Features
 
 - light/dark mode toggle + live accent color picker (persisted to localStorage)
-- terminal-style landing animation 
+- the home page is three.js (pinned to 0.128.0, the shaders are tuned for it) drawn to look like crayon, with a now-playing card and a song-rec box
+- draw on the home page; push your cursor to an edge and the simulation starts to show
 - cursor glow that follows your mouse and reacts to your accent color
 
 ## Development

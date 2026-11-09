@@ -215,9 +215,9 @@ const projects = [
         period: "Ongoing",
         role: "Builder and the only admin",
         forWhom: "My household, plus family and friends I share media with",
-        summary: "A 2010 Mac Pro running way more of my life than it should.",
+        summary: "A 2012 Mac Pro running way more of my life than it should.",
         problem: "I wanted my media, passwords and documents to be mine instead of rented, and I wanted to reach them from anywhere without opening up more than I had to.",
-        approach: "It runs Arch Linux on a 2010 Mac Pro, with the OS on mirrored SSDs and media on a mirrored 8 TB array. Everything lives in Docker Compose: Jellyfin with GPU transcoding, a music server, the *arr stack, Vaultwarden, Paperless-ngx and Pi-hole. Anything admin-facing stays behind WireGuard, certificates come from DNS challenges, and guests get a VPN profile that can only see the media front end. And yes, I keep adding services it doesn't need.",
+        approach: "It runs Arch Linux on a 2012 Mac Pro, with the OS on mirrored SSDs and media on a mirrored 8 TB array. Everything lives in Docker Compose: Jellyfin with GPU transcoding, a music server, the *arr stack, Vaultwarden, Paperless-ngx and Pi-hole. Anything admin-facing stays behind WireGuard, certificates come from DNS challenges, and guests get a VPN profile that can only see the media front end. And yes, I keep adding services it doesn't need.",
         outcome: [
             "Streams movies, TV and music to my family's TVs and phones.",
             "Encrypted backups go offsite every night, and I've actually tested a full restore (July 2026).",

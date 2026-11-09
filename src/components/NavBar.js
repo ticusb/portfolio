@@ -72,6 +72,16 @@ function NavBar({ theme, toggleTheme, accent, setAccent }) {
                             art
                         </Link>
                     </li>
+                    <li>
+                        <Link
+                            to="/about"
+                            className={
+                                location.pathname === "/about" ? "active" : ""
+                            }
+                        >
+                            about
+                        </Link>
+                    </li>
                 </ul>
                 <div className="nav-controls">
                     <button

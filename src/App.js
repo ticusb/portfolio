@@ -1,14 +1,17 @@
-import { useState, useEffect, useRef } from "react";
-import Home from "./components/Home";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import About from "./components/About";
+import Monologue from "./components/Monologue";
 import Projects from "./components/Projects";
 import Art from "./components/Art";
 import NavBar from "./components/NavBar";
 import CursorGlow from "./components/CursorGlow";
-import LandingOverlay from "./components/LandingOverlay";
 import ProjectDetail from "./components/ProjectDetail";
 import NotFound from "./components/NotFound";
 import { Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
+
+// three.js only ships with the home page, so the other pages stay light
+const CrayonWorld = lazy(() => import("./components/CrayonWorld"));
 
 const DEFAULT_ACCENT = "#16a34a";
 const PARTY_COLORS = [
@@ -53,7 +56,8 @@ function skipToContent(e) {
 }
 
 function App() {
-    const [overlayDone, setOverlayDone] = useState(false);
+    const { pathname } = useLocation();
+    const isHome = pathname === "/";
     const [theme, setTheme] = useState(
         () =>
             localStorage.getItem("theme") ||
@@ -137,6 +141,15 @@ function App() {
         return () => window.removeEventListener("keydown", onKey);
     }, [partyMode]);
 
+    // the home page is the crayon world: it brings its own intro and nav
+    if (isHome) {
+        return (
+            <Suspense fallback={<div className="crayon-loading" aria-hidden="true" />}>
+                <CrayonWorld />
+            </Suspense>
+        );
+    }
+
     return (
         <>
             <ScrollToTop />
@@ -147,9 +160,6 @@ function App() {
             >
                 Skip to content
             </a>
-            {!overlayDone && (
-                <LandingOverlay onDone={() => setOverlayDone(true)} />
-            )}
             {partyMode && (
                 <div className="party-toast">&gt; party mode: on</div>
             )}
@@ -161,7 +171,8 @@ function App() {
                 setAccent={setAccent}
             />
             <Routes>
-                <Route path="/" element={<Home overlayDone={overlayDone} />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/monologue" element={<Monologue />} />
                 <Route path="/projects" element={<Projects />} />
                 <Route path="/work/:slug" element={<ProjectDetail />} />
                 <Route path="/art" element={<Art />} />

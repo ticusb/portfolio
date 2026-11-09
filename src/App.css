@@ -29,3 +29,10 @@
         transform: translateX(-50%) translateY(0);
     }
 }
+
+/* paper-coloured placeholder while the crayon world's chunk loads */
+.crayon-loading {
+    position: fixed;
+    inset: 0;
+    background: #fbf5e6;
+}
