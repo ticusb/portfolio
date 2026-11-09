@@ -8,6 +8,8 @@ import { buildVoid } from "../void";
 export function createSpace(kit) {
   var crayon = kit.crayon, put = kit.put, avatar = kit.avatar, macPro = kit.props.macPro, PROJECTS = kit.PROJECTS;
   var sphere = kit.geo.sphere, sphereLo = kit.geo.sphereLo, halfSphere = kit.geo.halfSphere, cone = kit.geo.cone, torus = kit.geo.torus, cyl = kit.geo.cyl;
+  // constellation line colours, parsed once instead of every frame
+  var LINE_PICKED = new THREE.Color("#fff2a8"), LINE_SECTION = new THREE.Color("#b4c4ff"), LINE_REST = new THREE.Color("#8fa6e6");
   return {
     build: function (w) {
       var s = {};
@@ -174,7 +176,8 @@ export function createSpace(kit) {
       s.picks.forEach(function (pk, i) {
         var on = info.selected === pk.slug, inProjects = info.section === "projects";
         pk.stars.forEach(function (st, j) { st.scale.setScalar((0.13 + 0.03 * Math.sin(t * 2.2 + i + j * 1.7)) * (on ? 1.6 : 1)); });
-        pk.lines.forEach(function (ln) { ln.children[0].material.uniforms.uColor.value.set(on ? "#fff2a8" : inProjects ? "#b4c4ff" : "#8fa6e6"); });
+        var lineCol = on ? LINE_PICKED : inProjects ? LINE_SECTION : LINE_REST;
+        pk.lines.forEach(function (ln) { ln.children[0].material.uniforms.uColor.value.copy(lineCol); });
       });
     },
     navText: { about: "about ★", projects: "projects ▣", monologue: "monologue ✎" },

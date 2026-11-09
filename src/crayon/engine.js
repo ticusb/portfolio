@@ -513,6 +513,8 @@ export function mountCrayonWorld(root, opts) {
       shared.uRes.value.set(w, h);
       camera.aspect = w / h;
       VIEW_H = camera.aspect < 1 ? 15 / camera.aspect * 0.75 : 15;
+      // the label font size changes at the phone breakpoint, so measure them again
+      if (state && state.picks) state.picks.forEach(function (pk) { pk.lw = 0; });
     }
     listen(window, "resize", resize);
     resize();
@@ -654,7 +656,7 @@ export function mountCrayonWorld(root, opts) {
       }
       if (state.anchors) {
         state.anchors.forEach(function (n, i) {
-          var el = navEl.querySelector('[data-key="' + n.key + '"]');
+          var el = n.el || (n.el = navEl.querySelector('[data-key="' + n.key + '"]'));
           if (!el) return;
           n.obj.getWorldPosition(projV); projV.project(camera);
           el.style.left = ((projV.x + 1) / 2 * window.innerWidth).toFixed(1) + "px";
