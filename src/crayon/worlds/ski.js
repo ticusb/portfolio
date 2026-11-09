@@ -429,7 +429,7 @@ export function createSki(kit) {
       return s;
     },
     update: function (s, t, info) {
-      var G = s.GROUND, GX = s.GX, home = info.home;
+      var G = s.GROUND, GX = s.GX, home = info.home, f60 = info.f60 == null ? 1 : info.f60;
       var k = kNow(info.p), pDraw = info.p("draw"), pTurn = info.p("turn"), pCarve = info.p("carve");
       var p = new THREE.Vector3();
       // the groomed line only exists where I've already skied
@@ -493,7 +493,13 @@ export function createSki(kit) {
         pg.group.scale.setScalar(0.9);
         pg.group.visible = u > 0;
       });
-      if (dir.lengthSq() > 1e-6) { s.trail.unshift(p.clone()); if (s.trail.length > 24) s.trail.pop(); }
+      // one trail point per 1/60s (filled in along the way at lower frame rates), so the spray is the same length at any Hz
+      s.trailAcc = Math.min(6, (s.trailAcc || 0) + f60);
+      if (dir.lengthSq() > 1e-6 && s.trailAcc >= 1) {
+        var nT = Math.floor(s.trailAcc); s.trailAcc -= nT;
+        for (var jT = 1; jT <= nT; jT++) s.trail.unshift(prev.clone().lerp(p, jT / nT));
+        while (s.trail.length > 24) s.trail.pop();
+      }
       s.spray.forEach(function (sb, i) {
         var q = s.trail[Math.min(s.trail.length - 1, i * 2)];
         sb.visible = !(!q || air > 0.2 || s.trail.length < 3 || home > 0);
@@ -507,12 +513,12 @@ export function createSki(kit) {
         f.rotation.z = Math.sin(t * 5 + d.phase) * 0.12;
       });
       s.embers.forEach(function (em) {
-        var d = em.userData; d.life += 0.012; if (d.life > 1) { d.life = 0; d.a = Math.random() * Math.PI * 2; }
+        var d = em.userData; d.life += 0.012 * f60; if (d.life > 1) { d.life = 0; d.a = Math.random() * Math.PI * 2; }
         em.position.set(Math.cos(d.a) * 1.6 + Math.sin(d.life * 9 + d.a) * 0.15, Math.sin(d.a) * 1.6 + d.life * 2.4, 0);
         em.scale.setScalar(0.08 * (1 - d.life));
       });
       s.lava.forEach(function (l, i) { l.scale.y = 0.04 * (0.8 + 0.4 * Math.abs(Math.sin(t * 2 + i))); });
-      s.smoke.forEach(function (sm) { sm.position.y += 0.009; if (sm.position.y > s.smokeBase + 2.6) sm.position.y = s.smokeBase; var h = (sm.position.y - s.smokeBase) / 2.6; sm.scale.setScalar(0.12 + h * 0.3); });
+      s.smoke.forEach(function (sm) { sm.position.y += 0.009 * f60; if (sm.position.y > s.smokeBase + 2.6) sm.position.y = s.smokeBase; var h = (sm.position.y - s.smokeBase) / 2.6; sm.scale.setScalar(0.12 + h * 0.3); });
       var near = (k >= 0.46 && k < 0.7) ? 1 - smooth(0.8, 5.0, Math.abs(p.x - GX)) : 0;
       var rising = smooth(0.36, 0.5, k);
       s.plants.forEach(function (pg) {
@@ -531,7 +537,7 @@ export function createSki(kit) {
       s.chillHead.rotation.y = Math.sin(t * 0.6) * 0.25;
       s.picks.forEach(function (pk) {
         var on = info.selected === pk.slug;
-        pk.pop += ((on ? 1.12 : 1) - pk.pop) * 0.1;
+        pk.pop += ((on ? 1.12 : 1) - pk.pop) * (1 - Math.pow(0.9, f60));
         pk.group.scale.setScalar(pk.pop);
         pk.group.position.y = s.GROUND + (on ? Math.abs(Math.sin(t * 4)) * 0.18 : 0);
       });

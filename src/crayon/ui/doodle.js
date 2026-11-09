@@ -82,15 +82,19 @@ export function createDoodle(byId, listen, hint) {
   }
 
   // doodles fade slowly; once nothing has been drawn for a while, stop paying for a full-screen fade every frame
-  var lastInk = 0;
-  function fadeDoodles() {
+  // the fade runs in fixed 60Hz steps (skipped on a 120Hz frame, doubled at 30fps): halving a 0.006 alpha
+  // would round to nothing in the canvas's 8-bit alpha and the ink would never clear
+  var lastInk = 0, fadeAcc = 0;
+  function fadeDoodles(f60) {
     if (!lastInk) return;
     if (performance.now() - lastInk > 22000) { dx.save(); dx.setTransform(1, 0, 0, 1, 0, 0); dx.clearRect(0, 0, dc.width, dc.height); dx.restore(); lastInk = 0; return; }
+    fadeAcc = Math.min(6, fadeAcc + (f60 == null ? 1 : f60));
+    if (fadeAcc < 1) return;
     dx.save();
     dx.setTransform(1, 0, 0, 1, 0, 0);
     dx.globalCompositeOperation = "destination-out";
     dx.fillStyle = "rgba(0,0,0,0.006)";
-    dx.fillRect(0, 0, dc.width, dc.height);
+    for (; fadeAcc >= 1; fadeAcc--) dx.fillRect(0, 0, dc.width, dc.height);
     dx.restore();
   }
   return { dc: dc, dx: dx, look: look, fadeDoodles: fadeDoodles, enableTilt: enableTilt, setCanDraw: function (fn) { canDraw = fn; } };

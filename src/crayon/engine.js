@@ -564,6 +564,8 @@ export function mountCrayonWorld(root, opts) {
       var now = performance.now();
       var t = (now - loadAt) / 1000;
       var dtMs = Math.min(100, now - lastNow); lastNow = now;
+      // frames' worth of time at 60fps: per-frame steps scale by it so motion runs the same at 30, 60 or 120Hz
+      var f60 = dtMs / (1000 / 60);
       if (!document.hidden && !window.__fakeClock) adapt(dtMs, now); // a filmed frame always "takes" 33ms; don't let that look slow
       var T = mode === "gate" ? 0 : (now - introAt) / 1000;
       if (mode === "intro") {
@@ -589,13 +591,14 @@ export function mountCrayonWorld(root, opts) {
 
 
       var c = current.cam, walk = 0;
-      if (beatTable) rig.still(look, reduce); else walk = rig.base(c, progress, VIEW_H, now, reduce, look).walk;
+      if (beatTable) rig.still(look, reduce, f60); else walk = rig.base(c, progress, VIEW_H, now, reduce, look, f60).walk;
       // push the cursor to an edge and a round bite of code opens there: the end of the simulation.
       var on = (mode === "gate" || look.ui || section) ? 0 : 1;
       var pxT = Math.sign(look.tx) * smooth(0.55, 1.0, Math.abs(look.tx)) * on;
       var pyT = -Math.sign(look.ty) * smooth(0.6, 1.0, Math.abs(look.ty)) * on;
-      edgePush.x += (pxT - edgePush.x) * (reduce ? 1 : 0.08);
-      edgePush.y += (pyT - edgePush.y) * (reduce ? 1 : 0.08);
+      var edgeK = reduce ? 1 : 1 - Math.pow(1 - 0.08, f60);
+      edgePush.x += (pxT - edgePush.x) * edgeK;
+      edgePush.y += (pyT - edgePush.y) * edgeK;
       bite = Math.max(Math.abs(edgePush.x), Math.abs(edgePush.y));
       shared.uCursor.value.set(edgePush.x, edgePush.y);
       world.updateMatrixWorld();
@@ -607,7 +610,7 @@ export function mountCrayonWorld(root, opts) {
       if (beatTable) rig.pose(shotPose(mode === "home" ? introLen : mode === "gate" ? 0 : T, info), state, homeBlend, sectionBlend, lastSectionCam, look);
       else rig.aim(c, state, walk, homeBlend, sectionBlend, lastSectionCam, look);
 
-      current.update(state, reduce ? 0 : t, { p: info.p, cover: coverCut, section: section, selected: selected, sb: sectionBlend, sbKey: lastSectionKey, T: T, mode: mode, home: homeBlend, homeT: mode === "home" ? (reduce ? 99 : (now - homeAt) / 1000) : 0, burst: reduce ? null : burst, aspect: camera.aspect, progress: progress });
+      current.update(state, reduce ? 0 : t, { f60: f60, p: info.p, cover: coverCut, section: section, selected: selected, sb: sectionBlend, sbKey: lastSectionKey, T: T, mode: mode, home: homeBlend, homeT: mode === "home" ? (reduce ? 99 : (now - homeAt) / 1000) : 0, burst: reduce ? null : burst, aspect: camera.aspect, progress: progress });
       if (state.hero) {
         // the hero's flight from the gate: hold at the gate anchor (bobbing), then ease to where the world put me
         var fly = mode === "gate" ? 0 : simFrom ? smooth(0, 1, (now - simFrom - 200) / 1500) : 1;
@@ -633,7 +636,7 @@ export function mountCrayonWorld(root, opts) {
           state.hero.updateMatrixWorld(true);
         }
       }
-      if (!reduce) { fadeDoodles(); drawPowder(); }
+      if (!reduce) { fadeDoodles(f60); drawPowder(f60); }
       renderer.render(scene, camera);
       if (section === "projects" && state.picks) {
         // labels shuffle up so they don't sit on each other, and hide if they'd land behind the panel (phones)

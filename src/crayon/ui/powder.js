@@ -39,11 +39,14 @@ export function createPowder(dx, dc, world, camera) {
     }
     powderAt = performance.now();
   }
-  function drawPowder() {
+  // f60: frames' worth of time at 60fps, so the snow flies and clears at the same speed at any frame rate
+  function drawPowder(f60) {
+    var f = f60 == null ? 1 : f60;
     if (powder.length) {
+      var drag = Math.pow(0.97, f), grow = Math.pow(1.035, f);
       for (var i = powder.length - 1; i >= 0; i--) {
         var q = powder[i];
-        q.x += q.vx; q.y += q.vy; q.vy += 0.25; q.vx *= 0.97; q.r *= 1.035; q.life++;
+        q.x += q.vx * f; q.y += q.vy * f; q.vy += 0.25 * f; q.vx *= drag; q.r *= grow; q.life += f;
         dx.globalAlpha = 0.85;
         dx.drawImage(sprite(q.c), q.x - q.r, q.y - q.r, q.r * 2, q.r * 2);
         if (q.life > q.max) powder.splice(i, 1);
@@ -52,7 +55,7 @@ export function createPowder(dx, dc, world, camera) {
     }
     var since = performance.now() - powderAt;
     if (since > 900 && since < 5500) {
-      dx.save(); dx.setTransform(1, 0, 0, 1, 0, 0); dx.globalCompositeOperation = "destination-out"; dx.fillStyle = "rgba(0,0,0,0.05)"; dx.fillRect(0, 0, dc.width, dc.height); dx.restore();
+      dx.save(); dx.setTransform(1, 0, 0, 1, 0, 0); dx.globalCompositeOperation = "destination-out"; dx.fillStyle = "rgba(0,0,0," + (1 - Math.pow(0.95, f)).toFixed(4) + ")"; dx.fillRect(0, 0, dc.width, dc.height); dx.restore();
     } else if (since >= 5500 && since < 5600) {
       dx.save(); dx.setTransform(1, 0, 0, 1, 0, 0); dx.clearRect(0, 0, dc.width, dc.height); dx.restore();
     }

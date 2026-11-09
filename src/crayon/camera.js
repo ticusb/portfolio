@@ -12,7 +12,13 @@ export function fitFov(fov, aspect) {
 
 export function createRig(camera, world, shared) {
   var lookV = new THREE.Vector3();
-  function base(c, progress, VIEW_H, now, reduce, look) {
+  // the head turns toward the mouse with the same ease at any frame rate (f60 = frames' worth of time at 60fps)
+  function easeLook(look, reduce, f60) {
+    var k = reduce ? 1 : 1 - Math.pow(1 - 0.06, f60 == null ? 1 : f60);
+    look.yaw += (look.tx * 1.25 - look.yaw) * k;
+    look.pitch += (look.ty * 0.55 - look.pitch) * k;
+  }
+  function base(c, progress, VIEW_H, now, reduce, look, f60) {
     var wake = smooth(0.06, 0.42, progress);
     var walk = smooth(0.42, 1.0, progress);
     var fov = 8 + wake * 44;
@@ -24,8 +30,7 @@ export function createRig(camera, world, shared) {
     world.rotation.y = c.yaw * wake + walk * c.orbit + sway * 0.5 * wake;
     world.rotation.x = 0;
     // look too far toward the edge of the world and the simulation breaks; let go and it snaps back
-    look.yaw += (look.tx * 1.25 - look.yaw) * (reduce ? 1 : 0.06);
-    look.pitch += (look.ty * 0.55 - look.pitch) * (reduce ? 1 : 0.06);
+    easeLook(look, reduce, f60);
     return { wake: wake, walk: walk };
   }
   function aim(c, state, walk, homeBlend, sectionBlend, sectionCam, look) {
@@ -39,10 +44,9 @@ export function createRig(camera, world, shared) {
     finish(state, homeBlend, sectionBlend, sectionCam, look);
   }
   // authored shots: the world sits still and the camera goes exactly where the shot says
-  function still(look, reduce) {
+  function still(look, reduce, f60) {
     world.rotation.set(0, 0, 0);
-    look.yaw += (look.tx * 1.25 - look.yaw) * (reduce ? 1 : 0.06);
-    look.pitch += (look.ty * 0.55 - look.pitch) * (reduce ? 1 : 0.06);
+    easeLook(look, reduce, f60);
   }
   function pose(p, state, homeBlend, sectionBlend, sectionCam, look) {
     camera.position.copy(p.pos);
