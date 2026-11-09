@@ -16,10 +16,11 @@ export function createDoodle(byId, listen, hint) {
     dx.globalAlpha = 1;
   }
   var canDraw = function () { return false; };
-  // a mouse always draws; a finger draws once tilt is steering the camera (otherwise a drag is how you look around)
+  // at home a drag draws, mouse or finger, same as on the web (with no tilt, a finger drag only looks around in
+  // the sections, where there's nothing to draw on)
   var drawId = null;
   listen(dc, "pointerdown", function (e) {
-    if (!canDraw() || (e.pointerType !== "mouse" && !tilt)) return;
+    if (!canDraw()) return;
     drawing = true; drawId = e.pointerId; inkIdx = (inkIdx + 1) % inks.length; lastPt = { x: e.clientX, y: e.clientY }; waxDab(e.clientX, e.clientY, inks[inkIdx]);
   });
   function stopDrawing() { drawing = false; drawId = null; }
@@ -37,8 +38,7 @@ export function createDoodle(byId, listen, hint) {
   }
   sizeDoodle();
   listen(window, "resize", sizeDoodle);
-  // drag to look around; turn too far from the scene and the simulation breaks
-  // the camera looks where the mouse is; on touch, a sideways swipe turns your head
+  // the camera looks where the mouse is (or where the phone is tilted); look too far and the simulation breaks
   var look = { yaw: 0, pitch: 0, tx: 0, ty: 0 };
   listen(window, "pointermove", function (e) {
     if (e.pointerType === "mouse") {
@@ -46,8 +46,8 @@ export function createDoodle(byId, listen, hint) {
       look.tx = (e.clientX / window.innerWidth - 0.5) * 2;
       look.ty = (e.clientY / window.innerHeight - 0.5) * 2;
       if (Math.abs(look.tx) > 0.2) hint.style.opacity = "0";
-    } else if (touch && !tilt) {
-      // touch, no tilt: dragging pans your view; drag far enough toward an edge and the sim shows there
+    } else if (touch && !tilt && !drawing) {
+      // touch, no tilt, not drawing: dragging pans your view; drag far enough toward an edge and the sim shows there
       look.tx = Math.max(-1, Math.min(1, (e.clientX - touch.x) / (window.innerWidth * 0.45)));
       look.ty = Math.max(-1, Math.min(1, (e.clientY - touch.y) / (window.innerHeight * 0.45)));
     }
