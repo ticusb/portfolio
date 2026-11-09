@@ -458,7 +458,8 @@ export function mountCrayonWorld(root, opts) {
     }
     function go(name, remember) {
       if (remember) { try { localStorage.setItem("world", name); } catch (e) {} }
-      if (started && currentName && name !== currentName) { travelTo(name); return; }
+      // only once the intro has run: mid-intro, the other world plays its own intro from the start
+      if (mode === "home" && currentName && name !== currentName) { travelTo(name); return; }
       currentName = name;
       loadScene(name);
     }
