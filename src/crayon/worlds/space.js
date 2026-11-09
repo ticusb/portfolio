@@ -1,6 +1,7 @@
 /* eslint-disable no-loop-func */
 import * as THREE from "three";
 import { smooth, jitter } from "../util";
+import { buildVoid } from "../void";
 
 // SPACE (dark theme): I float in an astronaut suit until a UFO flies by and beams me up.
 // Home is me spinning in the beam with the nav orbiting; projects are constellations.
@@ -103,9 +104,12 @@ export function createSpace(kit) {
         w.add(g);
         s.picks.push({ slug: proj.slug, group: g, tip: tip, stars: stars, lines: lines });
       });
+      s.void = buildVoid(kit, w, true);
+      s.face = s.me.head;
       s.sections = {
         about: { cam: { pos: [3.4, 2.0, 3.6], look: [0.4, 1.7, -3], fov: 40 } },
-        projects: { cam: { pos: [-7.5, 5.4, 2.5], look: [-11.6, 6.6, -15], fov: 50 } }
+        projects: { cam: { pos: [-7.5, 5.4, 2.5], look: [-11.6, 6.6, -15], fov: 50 } },
+        monologue: {}
       };
       return s;
     },
@@ -125,6 +129,12 @@ export function createSpace(kit) {
       me.group.position.set(2 + Math.sin(t * 0.4) * 0.3 * (1 - lift), -0.6 + Math.sin(t * 0.7) * 0.2 * (1 - lift) + lift * 1.0 + Math.sin(t * 1.2) * 0.12 * lift, -3);
       me.group.rotation.set(Math.sin(t * 0.6) * 0.25, Math.sin(t * 0.3) * 0.5 + lift * t * 0.9, Math.sin(t * 0.5) * 0.25 + lift * Math.sin(t * 1.4) * 0.2);
       me.head.rotation.y = Math.sin(t * 1.3) * 0.25;
+      // going into my head: stop spinning and face the camera first
+      if (info.sbKey === "monologue" && info.sb > 0) {
+        var f = smooth(0, 0.6, info.sb), ry = me.group.rotation.y;
+        me.group.rotation.y = Math.atan2(Math.sin(ry), Math.cos(ry)) * (1 - f);
+        me.head.rotation.y *= 1 - f;
+      }
       var sp = 2 + flail * 7;
       me.hands[0].position.set(-0.62 - Math.abs(Math.sin(t * sp * 0.8)) * 0.15 * flail, 0.85 + Math.sin(t * sp) * 0.35 * flail, 0.06);
       me.hands[1].position.set(0.62 + Math.abs(Math.cos(t * sp * 0.8)) * 0.15 * flail, 0.85 + Math.cos(t * sp) * 0.35 * flail, 0.06);
@@ -143,6 +153,7 @@ export function createSpace(kit) {
       s.shoot.position.set(14 - st * 32, 8 - st * 6, -14);
       s.stars.forEach(function (sr, i) { if (i % 5 === 0) sr.visible = Math.sin(t * 2 + i) > -0.6; });
       s.focus.set(me.group.position.x, me.group.position.y + 1.0, -3);
+      s.void.update(t);
       // constellations: a soft twinkle; the one you picked lights up
       s.picks.forEach(function (pk, i) {
         var on = info.selected === pk.slug, inProjects = info.section === "projects";

@@ -1,6 +1,7 @@
 /* eslint-disable no-redeclare, no-loop-func */
 import * as THREE from "three";
 import { clamp01, smooth, jitter } from "../util";
+import { buildVoid } from "../void";
 
 /* SKI (light theme): 3D models built from Ticus's drawings: gray Tetons at the back, his blue three-peak
    mountain with snowy tips and thick black outlines, his stacked-triangle trees. I carve down, 360 through a
@@ -402,9 +403,13 @@ export function createSki(kit) {
         w.add(g);
         s.picks.push({ slug: proj.slug, group: g, tip: tip, pop: 1 });
       });
+      // the void inside my head (monologue), and the face you zoom into to get there
+      s.void = buildVoid(kit, w, false);
+      s.face = s.me.head;
       s.sections = {
         about: { cam: { pos: [M.x + 3.6, top + 1.2, M.z + 7.6], look: [M.x - 1.6, top - 0.3, M.z + 0.6], fov: 42 } },
-        projects: { cam: { pos: [GC.x + 1.4, GROUND + 4.6, GC.z + 10.5], look: [GC.x - 2.6, GROUND + 1.1, GC.z - 0.5], fov: 50 } }
+        projects: { cam: { pos: [GC.x + 1.4, GROUND + 4.6, GC.z + 10.5], look: [GC.x - 2.6, GROUND + 1.1, GC.z - 0.5], fov: 50 } },
+        monologue: {}
       };
       return s;
     },
@@ -438,7 +443,8 @@ export function createSki(kit) {
       var hop = pDraw > 0.8 && pDraw < 1 ? Math.sin(Math.PI * (pDraw - 0.8) / 0.2) * 0.35 : 0;
       var crouch = smooth(0.45, 0.9, pTurn) * (1 - smooth(0, 0.08, pCarve));
       s.skier.position.y += (hop - 0.12 * crouch) * (1 - home);
-      s.me.head.rotation.y = -s.skier.rotation.y * 0.75 * (1 - home) + 0.15 * home;
+      // my head turns to keep an eye on the camera as I carve, but not during the 360: then it spins with me
+      s.me.head.rotation.y = -(rr[1] - spin) * 0.75 * (1 - home) + 0.15 * home;
       s.body.rotation.x = ((air > 0.5 ? 0.5 : 0.25) + Math.sin(t * 2) * 0.03 + 0.45 * crouch) * (1 - home) + 0.05 * home;
       var lh = s.me.hands[0], rh = s.me.hands[1];
       if (home > 0) {
@@ -455,15 +461,20 @@ export function createSki(kit) {
         var a = t * 0.5 * pg.dir + pg.phase;
         var spread = Math.min(1, (info.aspect || 1.6) * 1.55);
         pg.cx = s.S.x + pg.ox * spread; pg.cz = s.S.z + pg.oz * (spread < 1 ? 1.25 : 1);
-        var show = s.instant ? Math.max(0.001, home) : smooth(0, 1, ((info.homeT || 0) - 1.6 - i * 0.55) / 0.9);
-        var hop = show < 1 ? Math.sin(show * Math.PI) * 0.6 : 0;
-        var x = pg.cx + Math.cos(a) * pg.r * show, z = pg.cz + Math.sin(a) * pg.r * 0.6 * show;
-        pg.group.position.set(x, G - (1 - show) * 1.2 + hop + Math.abs(Math.sin(t * 7 + i)) * 0.05 * show, z);
+        // once the snow clears they belly-slide in from off screen, one at a time, then pop up and waddle
+        // (the cover cut puts homeT 2s ahead, so count from there)
+        var u = info.mode === "home" ? clamp01(((info.homeT || 0) - (s.instant ? 2.0 : 1.6) - 0.35 - i * 0.45) / 1.25) : 0;
+        var travel = 1 - Math.pow(1 - clamp01(u / 0.72), 3), show = smooth(0.72, 1, u), side = pg.ox < 0 ? -1 : 1;
+        var x = pg.cx + Math.cos(a) * pg.r * show + side * 11 * (1 - travel), z = pg.cz + Math.sin(a) * pg.r * 0.6 * show;
+        var hop = Math.sin(show * Math.PI) * 0.4;
+        pg.group.position.set(x, G + 0.32 * (1 - show) + hop + Math.abs(Math.sin(t * 7 + i)) * 0.05 * show, z);
         pg.tip.userData.vis = show;
-        pg.group.rotation.set(0, Math.atan2(-Math.sin(a) * pg.dir, Math.cos(a) * pg.dir * 0.6) * 0.5 + 0.2 * Math.sin(a), Math.sin(t * 7 + i) * 0.14);
+        pg.group.rotation.order = "YXZ";
+        var waddleYaw = Math.atan2(-Math.sin(a) * pg.dir, Math.cos(a) * pg.dir * 0.6) * 0.5 + 0.2 * Math.sin(a);
+        pg.group.rotation.set(1.4 * (1 - show), -side * (Math.PI / 2) * (1 - show) + waddleYaw * show, Math.sin(t * 7 + i) * 0.14 * show);
         pg.fl.rotation.z = 0.35 + Math.sin(t * 9 + i) * 0.4;
         pg.fr.rotation.z = Math.sin(t * 3 + i) * 0.12;
-        pg.group.scale.setScalar(Math.max(0.001, show) * 0.9);
+        pg.group.scale.setScalar(u > 0 ? 0.9 : 0.001);
       });
       if (dir.lengthSq() > 1e-6) { s.trail.unshift(p.clone()); if (s.trail.length > 24) s.trail.pop(); }
       s.spray.forEach(function (sb, i) {
@@ -509,6 +520,7 @@ export function createSki(kit) {
       s.clouds[0].position.x = -14 + Math.sin(t * 0.15) * 1.2;
       s.clouds[1].position.x = 9 + Math.sin(t * 0.12 + 2) * 1.0;
       s.focus.copy(p);
+      s.void.update(t);
     },
     beats: BEATS,
     drawMs: 2400, drawDelay: 150, revealFrom: 0.17,

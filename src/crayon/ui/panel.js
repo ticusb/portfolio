@@ -3,7 +3,7 @@
 export function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 function link(href, text, external) { var a = el("a", null, text); a.href = href; if (external) { a.target = "_blank"; a.rel = "noreferrer"; } return a; }
 
-export function createPanel(byId, PROJECTS, onPick) {
+export function createPanel(byId, PROJECTS, onPick, THOUGHTS) {
   var panelEl = byId("panel"), panelBody = byId("panel-body"), panelBack = byId("panel-close");
   function fillPanel(title, build) {
     panelBody.textContent = "";
@@ -36,7 +36,6 @@ export function createPanel(byId, PROJECTS, onPick) {
         li.appendChild(btn); ul.appendChild(li);
       });
       b.appendChild(ul);
-      var more = el("p", "panel-more"); more.appendChild(link("#/projects", "see them all as a list →")); b.appendChild(more);
     });
   }
   // returns false for an unknown slug
@@ -56,10 +55,25 @@ export function createPanel(byId, PROJECTS, onPick) {
       if (p.approach) { b.appendChild(el("h3", null, "how I built it")); b.appendChild(el("p", null, p.approach)); }
       if (p.outcome && p.outcome.length) { b.appendChild(el("h3", null, "where it's at")); var ol = el("ul", "panel-bullets"); p.outcome.forEach(function (o) { ol.appendChild(el("li", null, o)); }); b.appendChild(ol); }
       if (p.stack && p.stack.length) b.appendChild(el("p", "panel-meta", p.stack.join(" · ")));
-      var more = el("p", "panel-more"); more.appendChild(link("#/work/" + p.slug, "read the whole thing →")); b.appendChild(more);
     });
     panelBack.textContent = "← all projects";
     return true;
   }
-  return { el: panelEl, back: panelBack, about: aboutPanel, projects: projectsPanel, project: projectPanel };
+  // the monologue, read out in the void inside my head
+  function monologuePanel() {
+    fillPanel("monologue", function (b) {
+      b.appendChild(el("p", "panel-lede", "You're inside my head now. This is where the thoughts float."));
+      var list = (THOUGHTS || []).filter(function (t) { return t && typeof t.text === "string" && t.text.trim(); });
+      if (!list.length) { b.appendChild(el("p", "panel-meta", "it's empty in here right now. come back later.")); return; }
+      var ul = el("ul", "panel-thoughts");
+      list.slice(0, 50).forEach(function (t) {
+        var li = el("li");
+        if (typeof t.date === "string") li.appendChild(el("p", "panel-meta", t.date));
+        li.appendChild(el("p", null, t.text.slice(0, 2000)));
+        ul.appendChild(li);
+      });
+      b.appendChild(ul);
+    });
+  }
+  return { el: panelEl, back: panelBack, about: aboutPanel, projects: projectsPanel, project: projectPanel, monologue: monologuePanel };
 }

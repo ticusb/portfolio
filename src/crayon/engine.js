@@ -13,6 +13,7 @@
 /* eslint-disable no-redeclare, no-loop-func */
 import * as THREE from "three";
 import projectData from "../data/projects";
+import THOUGHTS from "../data/monologue";
 import { clamp01, smooth } from "./util";
 import { createKit } from "./materials";
 import { createProps } from "./props";
@@ -36,7 +37,9 @@ function dailiesParams() {
   return { on: process.env.NODE_ENV !== "production" || q.has("dailies"), beat: q.get("beat") };
 }
 
-export function mountCrayonWorld(root) {
+// opts.section ("about" | "projects" | "monologue") and opts.project (a slug) deep-link straight into a section
+export function mountCrayonWorld(root, opts) {
+  opts = opts || {};
   var cleanups = [];
   var alive = true, rafId = 0, wobbleTimer = 0;
   function byId(id) { return root.querySelector("#" + id); }
@@ -196,27 +199,75 @@ export function mountCrayonWorld(root) {
     var navShown = false;
     // sections: about and projects open inside the world instead of leaving the page
     var lastSectionKey = null;
-    var section = null, selected = null, sectionBlend = 0, lastSectionCam = null, sectionAt = 0, sectionLeftAt = 0, blendFrom = 0;
+    var section = null, selected = null, sectionBlend = 0, lastSectionCam = null, sectionAt = 0, sectionLeftAt = 0, blendFrom = 0, sectionMs = 1500;
     var picksEl = byId("picks");
-    var panel = createPanel(byId, PROJECTS, function (slug) { openProject(slug); });
+    var panel = createPanel(byId, PROJECTS, function (slug) { openProject(slug); }, THOUGHTS);
     var panelEl = panel.el, panelBack = panel.back;
     function aboutPanel() { panel.about(); }
     function projectsPanel() { panel.projects(currentName); }
     function openProject(slug) { if (panel.project(slug)) selected = slug; }
+    // monologue: the camera pushes into my face, an ink blot opens out of it, and behind it is the void
+    // inside my head (void.js). Coming back out runs the other way.
+    var wipeEl = byId("void-wipe"), inVoid = false, faceCamSaved = null, faceV = new THREE.Vector3();
+    function faceCam() {
+      state.face.getWorldPosition(faceV);
+      var pos = faceV.clone().addScaledVector(camera.position.clone().sub(faceV).normalize(), 0.75);
+      var lp = world.worldToLocal(pos), lf = world.worldToLocal(faceV.clone());
+      return { pos: [lp.x, lp.y, lp.z], look: [lf.x, lf.y, lf.z], fov: 34 };
+    }
+    function wipe(on) {
+      if (reduce) return;
+      if (on) {
+        state.face.getWorldPosition(faceV); faceV.project(camera);
+        wipeEl.style.setProperty("--x", ((faceV.x + 1) / 2 * 100).toFixed(1) + "%");
+        wipeEl.style.setProperty("--y", ((1 - faceV.y) / 2 * 100).toFixed(1) + "%");
+        wipeEl.classList.remove("out"); wipeEl.classList.add("in");
+      } else {
+        wipeEl.classList.add("out");
+        later(function () { if (wipeEl.classList.contains("out")) wipeEl.classList.remove("in", "out"); }, 500);
+      }
+    }
+    function enterVoid() {
+      if (section !== "monologue") return;
+      inVoid = true; lastSectionCam = state.void.cam; blendFrom = 1; sectionAt = performance.now() - 1e6;
+      panelBack.textContent = "\u2190 back out";
+      panel.monologue();
+      later(function () { wipe(false); }, 80);
+    }
     function openSection(key) {
       if (!state.sections || !state.sections[key]) return false;
-      blendFrom = sectionBlend; sectionAt = performance.now();
+      blendFrom = sectionBlend; sectionAt = performance.now(); sectionMs = 1500;
       section = key; selected = null; lastSectionCam = state.sections[key].cam; lastSectionKey = key;
       navEl.classList.remove("show"); navEl.setAttribute("inert", ""); navShown = false;
       showTunes(false); hint.classList.remove("show"); replayEl.hidden = true;
       panelBack.textContent = "\u2190 back home";
-      if (key === "about") aboutPanel(); else projectsPanel();
       picksEl.hidden = key !== "projects";
+      if (key === "monologue") {
+        panelEl.hidden = true;
+        faceCamSaved = lastSectionCam = faceCam(); sectionMs = 900;
+        if (reduce) enterVoid();
+        else { later(function () { if (section === "monologue") wipe(true); }, 720); later(enterVoid, 1100); }
+        if (live) live.textContent = "Monologue. You're inside my head.";
+        return true;
+      }
+      if (key === "about") aboutPanel(); else projectsPanel();
       if (live) live.textContent = key === "about" ? "About." : "Projects. Pick one from the list.";
       return true;
     }
     function closeSection() {
-      blendFrom = sectionBlend; sectionLeftAt = performance.now();
+      // out of the void: blot over, cut back to my face, then pull out to home
+      if (section === "monologue" && inVoid && !reduce && !wipeEl.classList.contains("in")) {
+        panelEl.hidden = true; wipe(true);
+        later(function () { inVoid = false; lastSectionCam = faceCamSaved; blendFrom = 1; leaveSection(); wipe(false); }, 380);
+        return;
+      }
+      if (section === "monologue") { inVoid = false; lastSectionCam = faceCamSaved || lastSectionCam; }
+      blendFrom = sectionBlend; leaveSection();
+    }
+    function leaveSection() {
+      // a deep link (#/about) shouldn't reopen the section on refresh once you've left it
+      if (window.location.hash && window.location.hash !== "#/") window.history.replaceState(null, "", "#/");
+      sectionLeftAt = performance.now();
       section = null; selected = null; panelEl.hidden = true; picksEl.hidden = true; replayEl.hidden = false;
       navShown = false;
       var first = navEl.querySelector("a"); if (first) setTimeout(function () { if (alive && first) first.focus({ preventScroll: true }); }, 50);
@@ -226,7 +277,7 @@ export function mountCrayonWorld(root) {
       var a = e.target.closest && e.target.closest("a[data-key]");
       if (!a) return;
       var key = a.getAttribute("data-key");
-      if ((key === "about" || key === "projects") && openSection(key)) e.preventDefault();
+      if ((key === "about" || key === "projects" || key === "monologue") && openSection(key)) e.preventDefault();
     });
     listen(window, "keydown", function (e) {
       if (e.key !== "Escape" || !section) return;
@@ -316,6 +367,11 @@ export function mountCrayonWorld(root) {
       var forced = null;
       try { forced = localStorage.getItem("world"); } catch (e) {}
       go(forced === "space" || forced === "ski" ? forced : themeWorld(), false);
+      // deep link: straight to home, then into the section once the first frame has placed the camera
+      if (opts.section) {
+        startIntro(true);
+        later(function () { if (openSection(opts.section) && opts.project) openProject(opts.project); }, 60);
+      }
     })();
 
     var DRAW_DELAY = 400, DRAW_MS = 4200;
@@ -378,7 +434,7 @@ export function mountCrayonWorld(root) {
       world.updateMatrixWorld();
 
       if (reduce) sectionBlend = section ? 1 : 0;
-      else if (section) sectionBlend = blendFrom + (1 - blendFrom) * clamp01((now - sectionAt) / 1500);
+      else if (section) sectionBlend = blendFrom + (1 - blendFrom) * clamp01((now - sectionAt) / sectionMs);
       else sectionBlend = blendFrom * (1 - clamp01((now - sectionLeftAt) / 1300));
       var info = { viewH: VIEW_H, aspect: camera.aspect, p: function (name) { return beatP(name, T); } };
       if (beatTable) rig.pose(shotPose(mode === "home" ? introLen : mode === "gate" ? 0 : T, info), state, homeBlend, sectionBlend, lastSectionCam, look);
