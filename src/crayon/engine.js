@@ -19,7 +19,7 @@ import { createProps } from "./props";
 import { createAvatar } from "./avatar";
 import { createSpace } from "./worlds/space";
 import { createSki } from "./worlds/ski";
-import { createRig } from "./camera";
+import { createRig, fitFov } from "./camera";
 import { createDoodle } from "./ui/doodle";
 import { createTunes } from "./ui/tunes";
 import { createPowder } from "./ui/powder";
@@ -28,6 +28,13 @@ import { createPanel, el } from "./ui/panel";
 const PROJECTS = projectData.filter(function (p) { return !p.draft; });
 
 const FACE_URL = (process.env.PUBLIC_URL || "") + "/crayon/face.png";
+
+// dailies: in dev, or with ?dailies in the URL, the intro can start at a beat (?beat=jump) and the beat
+// timings are published on window.__beats for tools/dailies/film.mjs to mark on its timeline
+function dailiesParams() {
+  var q = new URLSearchParams(window.location.search);
+  return { on: process.env.NODE_ENV !== "production" || q.has("dailies"), beat: q.get("beat") };
+}
 
 export function mountCrayonWorld(root) {
   var cleanups = [];
@@ -67,11 +74,10 @@ export function mountCrayonWorld(root) {
   /* intro progress + the scrawled taglines */
   var progress = 0;
   var hint = byId("hint");
-  var scrawls = [
-    { el: byId("s-hello"), from: -1, to: 0.22 },
-    { el: byId("s-day"), from: 0.3, to: 0.62 },
-    { el: byId("s-night"), from: 0.46, to: 0.8 }
-  ];
+  // the taglines are the gate's title card: written while you decide to click, cleared as the drawing starts
+  // [from, to] in intro seconds; a negative start means up on the gate. A world can override with `tags`.
+  var TAGS = { "s-hello": [-1, 0.35], "s-day": [-1, 0.35], "s-night": [-1, 0.35] };
+  var scrawls = [byId("s-hello"), byId("s-day"), byId("s-night")].map(function (el) { return { el: el }; });
   var ready = false;
   function replayScrawls() {
     ready = false;
@@ -124,12 +130,47 @@ export function mountCrayonWorld(root) {
 
 
     var current = null, state = null, t0 = performance.now();
+    // the intro as beats: [{ name, start, dur, blend }]; worlds without beats still run on `progress`
+    var beatTable = null, beatByName = {}, introLen = 0;
+    var DAILIES = dailiesParams(), scrubbed = false;
+    function buildBeats() {
+      beatTable = null; beatByName = {}; introLen = 0;
+      if (!current.beats) return;
+      var acc = 0;
+      beatTable = current.beats.map(function (b) { var o = { name: b.name, start: acc, dur: b.dur, blend: b.blend || 0 }; acc += b.dur; beatByName[b.name] = o; return o; });
+      introLen = acc;
+    }
+    if (DAILIES.on) {
+      window.__beats = function () { return beatTable ? beatTable.map(function (b) { return { name: b.name, at: introAt / 1000 + b.start }; }) : []; };
+      cleanups.push(function () { delete window.__beats; });
+    }
+    // 0 before the beat, 0..1 during it, 1 after; everything is 1 once home
+    function beatP(name, T) {
+      if (mode === "home") return 1;
+      if (mode === "gate") return 0;
+      var b = beatByName[name];
+      return b ? clamp01((T - b.start) / b.dur) : 0;
+    }
+    function fitted(p) { return { pos: p.pos, look: p.look, fov: p.framed ? p.fov : fitFov(p.fov, camera.aspect), framed: true }; }
+    // the camera for intro time T: the current beat's shot, eased in from where the last shot ended
+    function shotPose(T, info) {
+      var i = 0;
+      while (i < beatTable.length - 1 && T >= beatTable[i + 1].start) i++;
+      var b = beatTable[i];
+      var pose = fitted(current.shots[b.name](state, clamp01((T - b.start) / b.dur), info));
+      if (i > 0 && b.blend > 0 && T - b.start < b.blend) {
+        var prev = fitted(current.shots[beatTable[i - 1].name](state, 1, info)), w = smooth(0, 1, (T - b.start) / b.blend);
+        pose = { pos: prev.pos.clone().lerp(pose.pos, w), look: prev.look.clone().lerp(pose.look, w), fov: prev.fov + (pose.fov - prev.fov) * w, framed: true };
+      }
+      return pose;
+    }
     function loadScene(name) {
       if (!SCENES[name]) name = "space";
       world.traverse(function (o) { if (o.material && o.material.dispose) o.material.dispose(); });
       while (world.children.length) world.remove(world.children[0]);
       current = SCENES[name];
       state = current.build(world);
+      buildBeats();
       t0 = started ? performance.now() : Infinity;
       shared.uReveal.value = reduce ? 1 : 0;
       root.classList.toggle("night", name === "space");
@@ -218,9 +259,17 @@ export function mountCrayonWorld(root) {
     function markSeen() { try { localStorage.setItem("crayonSeen", "1"); } catch (e) { /* private mode */ } }
     function startIntro(skip) {
       started = true; mode = "intro"; introAt = performance.now(); t0 = introAt;
-      if (reduce || skip === true) { mode = "home"; homeAt = introAt - 5000; t0 = introAt - 20000; replayEl.hidden = false; markSeen(); }
+      var instant = reduce || skip === true;
+      if (instant) { mode = "home"; homeAt = introAt - 5000; t0 = introAt - 20000; replayEl.hidden = false; markSeen(); }
+      // dailies: jump straight to a beat, with the drawing already done
+      if (!instant && !scrubbed && DAILIES.on && DAILIES.beat && beatByName[DAILIES.beat]) { scrubbed = true; introAt -= beatByName[DAILIES.beat].start * 1000; t0 = introAt - 20000; }
       if (state) state.k = null;
-      gateEl.hidden = true; replayEl.hidden = true; navEl.classList.remove("show"); hint.classList.remove("show");
+      // the crayon you clicked lifts off the page and the drawing starts where it went
+      if (!instant && !gateEl.hidden) {
+        gateEl.classList.add("leaving");
+        later(function () { gateEl.hidden = true; gateEl.classList.remove("leaving"); }, 450);
+      } else gateEl.hidden = true;
+      replayEl.hidden = true; navEl.classList.remove("show"); hint.classList.remove("show");
       replayScrawls();
     }
     listen(byId("start"), "click", function () { startIntro(false); });
@@ -297,8 +346,8 @@ export function mountCrayonWorld(root) {
       if (!document.hidden) adapt(dtMs);
       var T = mode === "gate" ? 0 : (now - introAt) / 1000;
       if (mode === "intro") {
-        var END = current.introEnd || INTRO_END;
-        progress = clamp01((T - 4.4) / (END - 4.4));
+        var END = beatTable ? introLen : current.introEnd || INTRO_END;
+        progress = beatTable ? clamp01(T / introLen) : clamp01((T - 4.4) / (END - 4.4));
         if (T >= END + 0.8) { mode = "home"; homeAt = now; replayEl.hidden = false; announce(); markSeen(); }
       } else progress = mode === "home" ? 1 : 0;
       var homeBlend = mode === "home" ? (state && state.instant ? 1 : smooth(0, 1, (now - homeAt) / 1600)) : 0;
@@ -306,13 +355,18 @@ export function mountCrayonWorld(root) {
       var navOn = homeBlend > 0.6 && !section;
       if (navOn !== navShown) { navShown = navOn; navEl.classList.toggle("show", navOn); navEl.toggleAttribute("inert", !navOn); showTunes(navOn); }
       hint.classList.toggle("show", mode === "home" && !section && now - homeAt > 3500 && bite < 0.2);
-      if (ready) scrawls.forEach(function (sc) { sc.el.classList.toggle("on", mode !== "home" && progress >= sc.from && progress < sc.to); });
+      if (ready) scrawls.forEach(function (sc) {
+        var tg = (current.tags || TAGS)[sc.el.id];
+        var on = mode === "gate" ? tg[0] < 0 : mode === "intro" && T >= tg[0] && T < tg[1];
+        sc.el.classList.toggle("on", on);
+      });
       shared.uTime.value = reduce ? 0 : now / 1000;
-      if (!reduce) shared.uReveal.value = clamp01((now - t0 - DRAW_DELAY) / DRAW_MS);
+      // a world can start its reveal part-way (revealFrom), so the first marks land as the crayon lifts off
+      if (!reduce) { var rf = current.revealFrom || 0; shared.uReveal.value = rf + (1 - rf) * clamp01((now - t0 - (current.drawDelay != null ? current.drawDelay : DRAW_DELAY)) / (current.drawMs || DRAW_MS)); }
 
 
-      var c = current.cam;
-      var walk = rig.base(c, progress, VIEW_H, now, reduce, look).walk;
+      var c = current.cam, walk = 0;
+      if (beatTable) rig.still(look, reduce); else walk = rig.base(c, progress, VIEW_H, now, reduce, look).walk;
       // push the cursor to an edge and a round bite of code opens there: the end of the simulation.
       var on = (mode === "gate" || look.ui || section) ? 0 : 1;
       var pxT = Math.sign(look.tx) * smooth(0.55, 1.0, Math.abs(look.tx)) * on;
@@ -326,9 +380,11 @@ export function mountCrayonWorld(root) {
       if (reduce) sectionBlend = section ? 1 : 0;
       else if (section) sectionBlend = blendFrom + (1 - blendFrom) * clamp01((now - sectionAt) / 1500);
       else sectionBlend = blendFrom * (1 - clamp01((now - sectionLeftAt) / 1300));
-      rig.aim(c, state, walk, homeBlend, sectionBlend, lastSectionCam, look);
+      var info = { viewH: VIEW_H, aspect: camera.aspect, p: function (name) { return beatP(name, T); } };
+      if (beatTable) rig.pose(shotPose(mode === "home" ? introLen : mode === "gate" ? 0 : T, info), state, homeBlend, sectionBlend, lastSectionCam, look);
+      else rig.aim(c, state, walk, homeBlend, sectionBlend, lastSectionCam, look);
 
-      current.update(state, reduce ? 0 : t, { cover: coverCut, section: section, selected: selected, sb: sectionBlend, sbKey: lastSectionKey, T: T, mode: mode, home: homeBlend, homeT: mode === "home" ? (reduce ? 99 : (now - homeAt) / 1000) : 0, burst: reduce ? null : burst, aspect: camera.aspect, progress: progress });
+      current.update(state, reduce ? 0 : t, { p: info.p, cover: coverCut, section: section, selected: selected, sb: sectionBlend, sbKey: lastSectionKey, T: T, mode: mode, home: homeBlend, homeT: mode === "home" ? (reduce ? 99 : (now - homeAt) / 1000) : 0, burst: reduce ? null : burst, aspect: camera.aspect, progress: progress });
       if (!reduce) { fadeDoodles(); drawPowder(); }
       renderer.render(scene, camera);
       if (section === "projects" && state.picks) {

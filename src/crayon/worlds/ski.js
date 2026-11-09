@@ -5,6 +5,83 @@ import { clamp01, smooth, jitter } from "../util";
 /* SKI (light theme): 3D models built from Ticus's drawings: gray Tetons at the back, his blue three-peak
    mountain with snowy tips and thick black outlines, his stacked-triangle trees. I carve down, 360 through a
    ring of fire over a lava crevasse full of snappers, and stop at the camera. Home: penguins hold the nav. */
+// The run, as beats (seconds). blend = how long the camera takes to ease from the last shot into this one.
+var BEATS = [
+  { name: "draw", dur: 2.8 },               // the page draws itself, flat; I hop once I'm drawn
+  { name: "turn", dur: 1.4 },               // the flat page swings into depth; I crouch and face downhill
+  { name: "carve", dur: 3.2, blend: 1.0 },  // S-turns down the peak, the groomed line drawing itself behind me
+  { name: "approach", dur: 0.9, blend: 0.7 }, // traverse to the kicker; the snappers come up
+  { name: "jump", dur: 1.9, blend: 0.4 },   // the 360 through the ring, slow at the top
+  { name: "runout", dur: 2.3, blend: 0.9 }  // carve at the camera, hockey stop, white-out
+];
+// slow-mo at the top of the jump: time through the jump beat is warped so the apex lasts longer
+var WARP = (function () {
+  var n = 200, acc = [0], A = 0.68, C = 0.56, W = 0.12;
+  for (var i = 1; i <= n; i++) { var u = (i - 0.5) / n; acc.push(acc[i - 1] + 1 - A * Math.exp(-Math.pow((u - C) / W, 2))); }
+  return acc.map(function (v) { return v / acc[n]; });
+})();
+function warp(u) { var x = clamp01(u) * (WARP.length - 1), i = Math.floor(x), f = x - i; return i >= WARP.length - 1 ? 1 : WARP[i] + (WARP[i + 1] - WARP[i]) * f; }
+// how far along the line I am (0..1) at a point in a beat
+function kAt(name, u) {
+  if (name === "carve") return 0.36 * u;
+  if (name === "approach") return 0.36 + 0.10 * u;
+  if (name === "jump") return 0.46 + 0.20 * warp(u);
+  if (name === "runout") return 0.66 + 0.34 * u;
+  return 0;
+}
+function kNow(p) {
+  if (p("runout") > 0) return kAt("runout", p("runout"));
+  if (p("jump") > 0) return kAt("jump", p("jump"));
+  if (p("approach") > 0) return kAt("approach", p("approach"));
+  return kAt("carve", p("carve"));
+}
+
+// The camera, one authored shot per beat. Each returns { pos, look, fov } for u = 0..1 through its beat;
+// framed: true means the shot sets its own frame height and shouldn't be widened on a phone.
+var V = function (x, y, z) { return new THREE.Vector3(x, y, z); };
+// the whole vista, framed VIEW_H tall around the mountain: the dolly zoom keeps that frame while the fov opens
+function vista(fov, viewH) {
+  var F = V(-1.6, -0.6, -12), dir = V(0.03, 0.03, 1).normalize();
+  var dist = (viewH / 2) / Math.tan(THREE.MathUtils.degToRad(fov / 2));
+  return { pos: F.clone().addScaledVector(dir, dist), look: F, fov: fov, framed: true, far: dist + 600 };
+}
+// where I am at path position k, smoothed over a short window so the camera doesn't copy every wiggle
+function smoothedAt(s, k, span) {
+  var acc = V(0, 0, 0), q = V(0, 0, 0), n = 0;
+  for (var i = -3; i <= 3; i++) { s.pathAt(clamp01(k + i * span / 3), q); acc.add(q); n++; }
+  return acc.multiplyScalar(1 / n);
+}
+var SHOTS = {
+  draw: function (s, u, info) { return vista(8, info.viewH); },
+  turn: function (s, u, info) {
+    // a dolly zoom: the fov opens from 8 to 40 (evenly, in log space) while the frame holds, and the camera
+    // rises a touch and drifts right, so the flat page swings into depth
+    var e = smooth(0, 1, u), v = vista(8 * Math.pow(40 / 8, e), info.viewH);
+    v.pos.add(V(3.2 * e, 2.4 * e, -1.2 * e));
+    v.look = v.look.clone().lerp(V(-5.2, 1.6, -11.4), 0.35 * e);
+    return v;
+  },
+  carve: function (s, u) {
+    var k = kAt("carve", u), mine = V(0, 0, 0); s.pathAt(k, mine);
+    var calm = smoothedAt(s, k, 0.05);
+    return { pos: calm.clone().add(V(4.4, 5.6, 13)), look: calm.clone().lerp(mine, 0.4).add(V(0.6, -1.2, 0)), fov: 36 };
+  },
+  approach: function (s, u) {
+    var mine = V(0, 0, 0); s.pathAt(kAt("approach", u), mine);
+    var y = s.topY(s.GX);
+    return { pos: V(s.GX - 0.5, y + 2.6, s.BZ + 15.5), look: V((mine.x + s.GX) / 2, y + 1.4, s.BZ), fov: 38 };
+  },
+  jump: function (s, u) {
+    var mine = V(0, 0, 0); s.pathAt(kAt("jump", u), mine);
+    var y = s.topY(s.GX);
+    return { pos: V(s.GX + 0.2 * (mine.x - s.GX), y + 3.0, s.BZ + 15), look: V(s.GX + 0.35 * (mine.x - s.GX), y + 2.6, s.BZ), fov: 36 };
+  },
+  runout: function (s, u) {
+    var mine = V(0, 0, 0); s.pathAt(kAt("runout", u), mine);
+    return { pos: s.S.clone().add(V(0.6, 2.9, 10.5)), look: mine.clone().lerp(s.S, 0.3).add(V(0, 0.9, 0)), fov: 46 };
+  }
+};
+
 export function createSki(kit) {
   var crayon = kit.crayon, put = kit.put, avatar = kit.avatar, sun = kit.props.sun, cloud = kit.props.cloud, PROJECTS = kit.PROJECTS;
   var sphere = kit.geo.sphere, sphereLo = kit.geo.sphereLo, halfSphere = kit.geo.halfSphere, cone = kit.geo.cone, torus = kit.geo.torus, cyl = kit.geo.cyl, box = kit.geo.box, plane = kit.geo.plane;
@@ -67,7 +144,7 @@ export function createSki(kit) {
         put(crayon(cone, "#3b2147", "#150a1c", { thick: 0.04, lump: 0.2, ink: "#07030a", order: 18.6 }), w, [GX + jitter(0.6), GROUND + 0.5, BZ + jitter(2.3)], [0.16, 0.7 + Math.random() * 0.6, 0.16], [jitter(0.2), 0, jitter(0.25)]);
       }
       s.smoke = [];
-      for (var si2 = 0; si2 < 12; si2++) s.smoke.push(put(crayon(sphereLo, "#4b3a5a", "#1d0f22", { noLine: true, lump: 0.3, order: 20 }), w, [GX + jitter(0.6), GROUND + Math.random() * 5, BZ + jitter(2.2)], 0.3));
+      for (var si2 = 0; si2 < 12; si2++) s.smoke.push(put(crayon(sphereLo, "#7a6a88", "#3d2f4a", { noLine: true, lump: 0.3, order: 20 }), w, [GX + jitter(0.6), GROUND + Math.random() * 5, BZ + jitter(2.2)], 0.3));
       s.smokeBase = GROUND + 0.3;
       // the snappers live down in the fire
       s.plants = [];
@@ -132,14 +209,15 @@ export function createSki(kit) {
       s.pathAt = function (k, out) {
         var G = GROUND, M = s.main, info = { air: 0, spin: 0, stopTurn: 0, phase: 0, c3: 0 };
         if (k < 0.36) {
-          var a = k / 0.36, ae = a * a * (3 - 2 * a);
+          // push off gently, then hold speed into the traverse (no stopping between segments)
+          var a = k / 0.36, ae = a < 0.2 ? a * a / 0.36 : (a - 0.1) / 0.9;
           var yEnd = topY(-1.8) + 0.05;
           var yy = G + M.H - 1.4 - ae * (G + M.H - 1.4 - yEnd);
           var r = M.R * (G + M.H - yy) / M.H + 0.22;
           var th = -0.5 + ae * 1.7 + Math.sin(a * Math.PI * 4) * 0.38 * (1 - a * 0.6);
           out.set(M.x + Math.sin(th) * r, yy, M.z + Math.cos(th) * r);
         } else if (k < 0.46) {
-          var c = (k - 0.36) / 0.10, e = c * c * (3 - 2 * c);
+          var c = (k - 0.36) / 0.10, e = c;
           var rEnd = M.R * (G + M.H - (topY(-1.8) + 0.05)) / M.H + 0.22;
           var x0 = M.x + Math.sin(1.2) * rEnd, z0 = M.z + Math.cos(1.2) * rEnd;
           var xb = x0 + (GX - 2.4 - x0) * e;
@@ -174,7 +252,8 @@ export function createSki(kit) {
       s.trail = [];
       // home: skis planted upright beside me, and a trail sign for the nav
       // the groomed run: one ribbon of snow that follows my line down the peak, across the shoulder, and out to the camera
-      function ribbon(pts, nrms, width, order) {
+      s.ribbons = [];
+      function ribbon(pts, nrms, width, order, ks) {
         var pos = [], nor = [], idx = [];
         for (var i = 0; i < pts.length; i++) {
           var a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
@@ -189,6 +268,7 @@ export function createSki(kit) {
         geo.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
         geo.setIndex(idx);
         var m = crayon(geo, "#ffffff", "#b3c8ea", { noLine: true, lump: 0, over: 0, side: THREE.DoubleSide, order: order });
+        s.ribbons.push({ geo: geo, ks: ks });
         w.add(m); return m;
       }
 
@@ -199,20 +279,22 @@ export function createSki(kit) {
       });
       // the run itself, sampled from the same line I ski
       (function () {
-        var up = new THREE.Vector3(0, 1, 0), pts = [], nrms = [];
+        var up = new THREE.Vector3(0, 1, 0), pts = [], nrms = [], ks = [];
+        var kJump = function (x) { return 0.46 + 0.2 * (x - (GX - 2.4)) / 5; };
         for (var kk = 0; kk <= 0.46; kk += 0.004) {
+          ks.push(kk);
           var q = new THREE.Vector3(); s.pathAt(kk, q);
           var n;
           if (kk < 0.36) { var rad = new THREE.Vector3(q.x - s.main.x, 0, q.z - s.main.z).normalize(); n = rad.multiplyScalar(s.main.H).add(new THREE.Vector3(0, s.main.R, 0)).normalize(); }
           else n = new THREE.Vector3(Math.sin(0.25), Math.cos(0.25), 0);
           pts.push(q.addScaledVector(n, 0.09)); nrms.push(n);
         }
-        for (var xk = GX - 2.4; xk <= GX - 1.2; xk += 0.15) { pts.push(new THREE.Vector3(xk, topY(xk) + 0.03, BZ)); nrms.push(new THREE.Vector3(Math.sin(0.25), Math.cos(0.25), 0)); }
-        ribbon(pts, nrms, 1.15, 16);
-        var p2 = [], n2 = [];
-        for (var xl = GX + 1.3; xl <= GX + 2.6; xl += 0.15) { p2.push(new THREE.Vector3(xl, topY(xl) + 0.03, BZ)); n2.push(new THREE.Vector3(Math.sin(0.25), Math.cos(0.25), 0)); }
-        for (var e = 0; e <= 1.0001; e += 0.02) { var cp = s.curveD.getPoint(e); var onBench = cp.z < -5.3 && cp.x < 7.6; cp.y = onBench ? topY(cp.x) + 0.03 : Math.max(GROUND + 0.03, cp.y - 0.09); p2.push(cp); n2.push(onBench ? new THREE.Vector3(Math.sin(0.25), Math.cos(0.25), 0) : up.clone()); }
-        ribbon(p2, n2, 1.3, 26);
+        for (var xk = GX - 2.4; xk <= GX - 1.2; xk += 0.15) { pts.push(new THREE.Vector3(xk, topY(xk) + 0.03, BZ)); nrms.push(new THREE.Vector3(Math.sin(0.25), Math.cos(0.25), 0)); ks.push(kJump(xk)); }
+        ribbon(pts, nrms, 1.15, 16, ks);
+        var p2 = [], n2 = [], k2 = [];
+        for (var xl = GX + 1.3; xl <= GX + 2.6; xl += 0.15) { p2.push(new THREE.Vector3(xl, topY(xl) + 0.03, BZ)); n2.push(new THREE.Vector3(Math.sin(0.25), Math.cos(0.25), 0)); k2.push(kJump(xl)); }
+        for (var e = 0; e <= 1.0001; e += 0.02) { k2.push(0.66 + 0.34 * (1 - Math.pow(1 - Math.min(1, e), 1 / 2.2))); var cp = s.curveD.getPoint(e); var onBench = cp.z < -5.3 && cp.x < 7.6; cp.y = onBench ? topY(cp.x) + 0.03 : Math.max(GROUND + 0.03, cp.y - 0.09); p2.push(cp); n2.push(onBench ? new THREE.Vector3(Math.sin(0.25), Math.cos(0.25), 0) : up.clone()); }
+        ribbon(p2, n2, 1.3, 26, k2);
       })();
       // fill the seams: snow drifts where the peak meets the shoulder, and where the shoulder meets the valley
       put(crayon(sphere, "#f4f8ff", "#9db8e8", { thick: 0.08, lump: 0.2, ink: INK, order: 16.5 }), w, [-2.2, GROUND + 0.9, -9.6], [2.6, 1.9, 2.9]);
@@ -328,8 +410,10 @@ export function createSki(kit) {
     },
     update: function (s, t, info) {
       var G = s.GROUND, GX = s.GX, home = info.home;
-      var k = clamp01((info.progress - 0.02) / 0.96);
+      var k = kNow(info.p), pDraw = info.p("draw"), pTurn = info.p("turn"), pCarve = info.p("carve");
       var p = new THREE.Vector3();
+      // the groomed line only exists where I've already skied
+      s.ribbons.forEach(function (rb) { var n = 0; while (n < rb.ks.length && rb.ks[n] <= k + 1e-6) n++; rb.geo.setDrawRange(0, Math.max(0, n - 1) * 6); });
       if (k < 0.01) { s.sprayed = false; s.instant = false; }
       var pi = s.pathAt(k, p), air = pi.air, spin = pi.spin, stopTurn = pi.stopTurn;
       if (pi.phase === 3 && pi.c3 > 0.9 && !s.sprayed && info.mode === "intro") { s.sprayed = true; if (info.burst) info.burst(p.clone().add(new THREE.Vector3(0, 0.6, 0.8)), true); if (info.cover) info.cover(); }
@@ -337,26 +421,32 @@ export function createSki(kit) {
       var prev = s.trail[0] || p.clone().add(new THREE.Vector3(-0.01, 0.01, 0));
       var dir = p.clone().sub(prev);
       s.skier.rotation.order = "YXZ";
-      if (dir.lengthSq() > 1e-6) {
-        var yaw = Math.atan2(dir.x, dir.z);
-        var turn = s.lastYaw == null ? 0 : Math.atan2(Math.sin(yaw - s.lastYaw), Math.cos(yaw - s.lastYaw));
-        s.lastYaw = yaw;
-        var pitch = Math.atan2(-dir.y, Math.hypot(dir.x, dir.z));
-        s.runRot = [Math.max(-0.6, Math.min(0.6, pitch)) * 0.7, yaw * (1 - stopTurn) + (Math.PI / 2) * stopTurn + spin, Math.max(-0.55, Math.min(0.55, -turn * 14)) * (1 - stopTurn) + stopTurn * 0.35];
-      }
-      var rr = s.runRot || [0, 0, 0];
+      // facing and lean come from the line itself (not frame to frame), so they're the same at any frame rate
+      var DK = 0.006, v0 = s.v0 || (s.v0 = new THREE.Vector3()), v1 = s.v1 || (s.v1 = new THREE.Vector3());
+      s.pathAt(Math.max(0, k - DK), v0);
+      s.pathAt(Math.min(1, Math.max(k, DK) + DK), v1);
+      var ahead = v1.clone().sub(k > DK ? p : v0), behind = p.clone().sub(v0);
+      var yaw = Math.atan2(ahead.x, ahead.z), yawB = behind.lengthSq() > 1e-8 ? Math.atan2(behind.x, behind.z) : yaw;
+      var turn = Math.atan2(Math.sin(yaw - yawB), Math.cos(yaw - yawB));
+      var pitch = Math.atan2(-ahead.y, Math.hypot(ahead.x, ahead.z));
+      if (k <= 0) { yaw *= smooth(0.3, 0.85, pTurn); pitch = 0; turn = 0; } // face the camera until the swing, then turn downhill
+      var rr = [Math.max(-0.6, Math.min(0.6, pitch)) * 0.7, yaw * (1 - stopTurn) + (Math.PI / 2) * stopTurn + spin, Math.max(-0.55, Math.min(0.55, -turn * 5)) * (1 - stopTurn) + stopTurn * 0.35];
       var hy = -0.15;
       s.skier.rotation.set(rr[0] * (1 - home), rr[1] * (1 - home) + hy * home, rr[2] * (1 - home) + 0.06 * home);
       s.skier.position.copy(p);
+      // once I'm drawn I hop; while the page swings into 3D I crouch and plant a pole, then push off
+      var hop = pDraw > 0.8 && pDraw < 1 ? Math.sin(Math.PI * (pDraw - 0.8) / 0.2) * 0.35 : 0;
+      var crouch = smooth(0.45, 0.9, pTurn) * (1 - smooth(0, 0.08, pCarve));
+      s.skier.position.y += (hop - 0.12 * crouch) * (1 - home);
       s.me.head.rotation.y = -s.skier.rotation.y * 0.75 * (1 - home) + 0.15 * home;
-      s.body.rotation.x = ((air > 0.5 ? 0.5 : 0.25) + Math.sin(t * 2) * 0.03) * (1 - home) + 0.05 * home;
+      s.body.rotation.x = ((air > 0.5 ? 0.5 : 0.25) + Math.sin(t * 2) * 0.03 + 0.45 * crouch) * (1 - home) + 0.05 * home;
       var lh = s.me.hands[0], rh = s.me.hands[1];
       if (home > 0) {
         lh.position.set(-0.7, 0.78 + (0.5 + Math.sin(t * 7) * 0.12) * home, 0.1);
         rh.position.set(0.7, 0.95, 0.06);
       } else {
         lh.position.set(-0.62, 0.78 + (air > 0.5 ? 0.45 : 0), 0.06);
-        rh.position.set(0.62, 0.78 + (air > 0.5 ? 0.45 : 0), 0.06);
+        rh.position.set(0.62, 0.78 + (air > 0.5 ? 0.45 : 0) - 0.15 * crouch, 0.06 + 0.35 * crouch);
       }
       s.gear.forEach(function (gm) { gm.visible = home < 0.5; });
       s.planted.scale.setScalar(Math.max(0.001, home));
@@ -393,7 +483,7 @@ export function createSki(kit) {
         em.scale.setScalar(0.08 * (1 - d.life));
       });
       s.lava.forEach(function (l, i) { l.scale.y = 0.04 * (0.8 + 0.4 * Math.abs(Math.sin(t * 2 + i))); });
-      s.smoke.forEach(function (sm) { sm.position.y += 0.014; if (sm.position.y > s.smokeBase + 5) sm.position.y = s.smokeBase; var h = (sm.position.y - s.smokeBase) / 5; sm.scale.setScalar(0.15 + h * 0.55); });
+      s.smoke.forEach(function (sm) { sm.position.y += 0.009; if (sm.position.y > s.smokeBase + 2.6) sm.position.y = s.smokeBase; var h = (sm.position.y - s.smokeBase) / 2.6; sm.scale.setScalar(0.12 + h * 0.3); });
       var near = (k >= 0.46 && k < 0.7) ? 1 - smooth(0.8, 5.0, Math.abs(p.x - GX)) : 0;
       var rising = smooth(0.36, 0.5, k);
       s.plants.forEach(function (pg) {
@@ -420,8 +510,9 @@ export function createSki(kit) {
       s.clouds[1].position.x = 9 + Math.sin(t * 0.12 + 2) * 1.0;
       s.focus.copy(p);
     },
-    introEnd: 13,
-    navText: { about: "● about", projects: "■ projects", monologue: "◆ monologue" },
-    cam: { walk: [2, -2.2, -4], look: [-3, 0, -12], lookWalk: [6, -2.0, 10], yaw: -0.04, orbit: 0.04, follow: 0.55 }
+    beats: BEATS,
+    drawMs: 2400, drawDelay: 150, revealFrom: 0.17,
+    shots: SHOTS,
+    navText: { about: "● about", projects: "■ projects", monologue: "◆ monologue" }
   };
 }

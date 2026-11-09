@@ -1,8 +1,15 @@
 import * as THREE from "three";
 import { smooth } from "./util";
 
-// The camera rig. base() places the camera along the intro (the flat-to-3D dolly zoom, then the walk);
-// aim() points it: follow me, blend to the home shot, blend to a section's shot, then add the mouse look.
+// The camera rig. Worlds with authored shots (ski) hand it a pose per frame: still() + pose().
+// Older worlds (space, until it gets its beats) use base() + aim(): the intro's blended dolly zoom and walk.
+// Either way finish() blends to the home shot, then to a section's shot, then adds the mouse look.
+// a vertical fov that keeps about the same width of world in view on a portrait screen
+export function fitFov(fov, aspect) {
+  if (aspect >= 1) return fov;
+  return Math.min(80, THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(fov / 2)) / aspect * 0.8)));
+}
+
 export function createRig(camera, world, shared) {
   var lookV = new THREE.Vector3();
   function base(c, progress, VIEW_H, now, reduce, look) {
@@ -29,6 +36,23 @@ export function createRig(camera, world, shared) {
       camera.position.x += (f.x - camera.position.x) * 0.5 * c.follow * walk;
       camera.position.y += (f.y + 2.5 - camera.position.y) * 0.5 * c.follow * walk;
     }
+    finish(state, homeBlend, sectionBlend, sectionCam, look);
+  }
+  // authored shots: the world sits still and the camera goes exactly where the shot says
+  function still(look, reduce) {
+    world.rotation.set(0, 0, 0);
+    look.yaw += (look.tx * 1.25 - look.yaw) * (reduce ? 1 : 0.06);
+    look.pitch += (look.ty * 0.55 - look.pitch) * (reduce ? 1 : 0.06);
+  }
+  function pose(p, state, homeBlend, sectionBlend, sectionCam, look) {
+    camera.position.copy(p.pos);
+    lookV.copy(p.look);
+    // portrait screens: keep roughly the same width of world in view, unless the shot frames itself
+    camera.fov = p.framed ? p.fov : fitFov(p.fov, camera.aspect);
+    camera.near = 0.1; camera.far = p.far || 800;
+    finish(state, homeBlend, sectionBlend, sectionCam, look);
+  }
+  function finish(state, homeBlend, sectionBlend, sectionCam, look) {
     if (homeBlend > 0 && state.homeCam) {
       var hc = state.homeCam;
       var hp = new THREE.Vector3(hc.pos[0], hc.pos[1], hc.pos[2]).applyMatrix4(world.matrixWorld);
@@ -53,5 +77,5 @@ export function createRig(camera, world, shared) {
     camera.rotateX(-(look.pitch / 0.55) * hv * 0.18);
     camera.updateProjectionMatrix();
   }
-  return { base: base, aim: aim };
+  return { base: base, aim: aim, still: still, pose: pose };
 }

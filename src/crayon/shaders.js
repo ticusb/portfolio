@@ -127,7 +127,8 @@ export const lineFrag = [
   "varying float vAng; varying vec3 vWorld;",
   EDGE,
   "void main(){",
-  "  if (uDelay*0.55 + vAng*0.25 > uReveal*1.6) discard;",
+  // the outline goes on after the fill has covered the shape (a shell with nothing in front of it is a black blob)
+  "  if (uDelay*0.6 + 0.68 + vAng*0.15 > uReveal*1.6) discard;",
   "  if (dissolve(gl_FragCoord.xy / uDpr) > 0.5) discard;",
   "  vec2 p = gl_FragCoord.xy / uDpr;",
   "  if (noise(vec2(vAng*16.0, uSeed)) < 0.18) discard;",

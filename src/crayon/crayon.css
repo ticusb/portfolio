@@ -46,23 +46,35 @@ html.crayon-lock, html.crayon-lock body { overflow: hidden; height: 100%; }
 .crayon-root .scrawl text { font-family: var(--hand); font-weight: 700; }
 .crayon-root .scrawl .ink { fill: none; stroke: var(--c); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 900; stroke-dashoffset: 900; }
 .crayon-root .scrawl .wax { fill: var(--c); fill-opacity: 0; }
-.crayon-root .scrawl.on .ink { animation: write 1.4s var(--d, 0s) cubic-bezier(.5,.1,.4,1) forwards; }
-.crayon-root .scrawl.on .wax { animation: wax 0.5s calc(var(--d, 0s) + 0.9s) ease-out forwards; }
+.crayon-root .scrawl.on .ink { animation: write 1.4s calc(var(--base, 0s) + var(--d, 0s)) cubic-bezier(.5,.1,.4,1) forwards; }
+.crayon-root .scrawl.on .wax { animation: wax 0.5s calc(var(--base, 0s) + var(--d, 0s) + 0.9s) ease-out forwards; }
+/* the title card writes itself line by line */
+.crayon-root #s-day { --base: 1.3s; }
+.crayon-root #s-night { --base: 2.2s; }
 @keyframes write { to { stroke-dashoffset: 0; } }
 @keyframes wax { to { fill-opacity: 0.92; } }
-.crayon-root #s-hello { left: 4vw; top: 10vh; width: min(88vw, 760px); }
-.crayon-root #s-day { left: 6vw; top: 22vh; width: min(80vw, 560px); }
-.crayon-root #s-night { right: 5vw; bottom: 16vh; width: min(86vw, 720px); }
+/* the gate's title card: three lines down the page, the crayon underneath */
+.crayon-root #s-hello { left: 5vw; top: 8vh; width: min(84vw, 740px); }
+.crayon-root #s-day { left: 10vw; top: 29vh; width: min(66vw, 500px); }
+.crayon-root #s-night { right: 6vw; top: 43vh; width: min(80vw, 660px); }
 .crayon-root .gate[hidden], .crayon-root .replay[hidden] { display: none !important; }
 .crayon-root .skip { margin-top: 6px; min-height: 44px; padding: 4px 12px; background: none; border: 0; font-family: var(--hand); font-weight: 700; font-size: 20px; color: var(--ink); text-decoration: underline wavy; text-underline-offset: 5px; cursor: pointer; opacity: 0.8; }
 .crayon-root .skip:hover { opacity: 1; color: var(--red); }
 .crayon-root .skip[hidden] { display: none; }
-.crayon-root .gate { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; justify-content: center; padding-bottom: max(14vh, env(safe-area-inset-bottom, 0px)); z-index: 6; }
+.crayon-root .gate { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: max(11vh, env(safe-area-inset-bottom, 0px)); z-index: 6; }
 .crayon-root .start { display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: 0; cursor: pointer; font-family: var(--hand); font-weight: 700; font-size: 26px; color: var(--ink); min-height: 44px; padding: 8px 16px; }
 .crayon-root .start svg { animation: nudge 1.6s ease-in-out infinite; max-width: 80vw; height: auto; }
 .crayon-root .start-sub { font-size: 20px; opacity: 0.7; }
 .crayon-root .start:hover svg { transform: rotate(-8deg) translateY(-4px); animation: none; }
 @keyframes nudge { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg) translateY(-3px); } }
+/* the crayon waits until "hi, I'm Ticus" has been written, then rolls in */
+.crayon-root .start, .crayon-root .skip { animation: crayon-in 0.6s cubic-bezier(.2,.9,.3,1.2) 3.4s both; }
+@keyframes crayon-in { from { opacity: 0; transform: translateY(14px) rotate(-12deg); } to { opacity: 1; transform: none; } }
+/* clicked: the crayon lifts off toward the drawing and the gate clears */
+.crayon-root .gate.leaving { pointer-events: none; }
+.crayon-root .gate.leaving .start { animation: crayon-lift 0.45s cubic-bezier(.5,0,.8,.4) forwards; }
+.crayon-root .gate.leaving .skip { animation: none; opacity: 0; transition: opacity 0.2s; }
+@keyframes crayon-lift { from { opacity: 1; transform: none; } to { opacity: 0; transform: translate(-22vw, -34vh) rotate(-38deg) scale(0.55); } }
 .crayon-root .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .crayon-root .worldnav.static { position: fixed; inset: auto 0 18vh 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; opacity: 1; pointer-events: auto; }
 .crayon-root .worldnav.static a { position: static; transform: none; }
@@ -92,7 +104,7 @@ html.crayon-lock, html.crayon-lock body { overflow: hidden; height: 100%; }
 @media (pointer: coarse) { .crayon-root #hint { display: none; } }
 @media (max-width: 600px) { .crayon-root .replay { font-size: 18px; } .crayon-root .picker button { font-size: 18px; } }
 @media (prefers-reduced-motion: reduce) {
-  .crayon-root .start svg { animation: none; }
+  .crayon-root .start svg, .crayon-root .start, .crayon-root .skip { animation: none; }
   .crayon-root .scrawl, .crayon-root .scrawl.on .ink, .crayon-root .scrawl.on .wax { animation: none; transition: none; }
   .crayon-root .scrawl.on .ink { stroke-dashoffset: 0; } .crayon-root .scrawl.on .wax { fill-opacity: 0.92; }
 }
