@@ -254,6 +254,7 @@ export function createSki(kit) {
       });
       s.me = me; s.body = me.body;
       s.skier = put(me.group, w, [0, 6, -6], 0.85);
+      s.hero = s.skier; // the one who floats on the gate before the world exists
       s.spray = [];
       for (var i = 0; i < 12; i++) s.spray.push(put(crayon(sphereLo, "#ffffff", "#9db8e8", { thick: 0.03, lump: 0.3, order: 30 }), w, [0, -50, 0], 0.15));
       s.trail = [];

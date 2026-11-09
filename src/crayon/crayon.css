@@ -171,3 +171,15 @@ html.crayon-lock, html.crayon-lock body { overflow: hidden; height: 100%; }
 .crayon-root .panel-thoughts p { margin: 0; }
 @media (prefers-reduced-motion: reduce) { .crayon-root .void-wipe { display: none; } }
 
+/* preparing the sim: the gate is the old site (near-white, dot grid). Picking up the crayon fades it into paper */
+.crayon-root { transition: background-color 0.9s ease; }
+.crayon-root::before { content: ""; position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.9s ease;
+  background-image: radial-gradient(circle, #dcdcd9 1.5px, transparent 1.5px); background-size: 28px 28px; }
+.crayon-root.sim { background-color: #f7f7f5; }
+.crayon-root.sim::before { opacity: 1; }
+.crayon-root.sim .paper-grain { opacity: 0; }
+.crayon-root .paper-grain { transition: opacity 0.9s ease; }
+.crayon-root.night.sim { background-color: #0c0c0c; }
+.crayon-root.night::before { background-image: radial-gradient(circle, #262626 1.5px, transparent 1.5px); }
+@media (prefers-reduced-motion: reduce) { .crayon-root, .crayon-root::before, .crayon-root .paper-grain { transition: none; } }
+

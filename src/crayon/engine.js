@@ -121,7 +121,7 @@ export function mountCrayonWorld(root, opts) {
 
     var shared = {
       uTime: { value: 0 }, uDpr: { value: dpr }, uRes: { value: new THREE.Vector2(1, 1) },
-      uReveal: { value: reduce ? 1 : 0 }, uHalfFov: { value: new THREE.Vector2(0.1, 0.07) }, uCursor: { value: new THREE.Vector2(0, 0) }
+      uReveal: { value: reduce ? 1 : 0 }, uHalfFov: { value: new THREE.Vector2(0.1, 0.07) }, uCursor: { value: new THREE.Vector2(0, 0) }, uSim: { value: 0 }
     };
 
     var kit = createKit(shared, coarse);
@@ -179,6 +179,9 @@ export function mountCrayonWorld(root, opts) {
       current = SCENES[name];
       state = current.build(world);
       kit.flushBakes();
+      // the hero is drawn even before the world is (uKeep), first as the unrendered sim
+      if (state.hero) state.hero.traverse(function (o) { if (o.material && o.material.uniforms && o.material.uniforms.uKeep) o.material.uniforms.uKeep.value = 1; });
+      simFrom = null; heroAnchor = null;
       if (thinLines) thinOutlines();
       buildBeats();
       t0 = started ? performance.now() : Infinity;
@@ -315,9 +318,27 @@ export function mountCrayonWorld(root, opts) {
     var mode = "gate", started = false, introAt = 0, homeAt = 0, INTRO_END = 10.5, loadAt = performance.now();
     var gateEl = byId("gate"), navEl = byId("worldnav"), replayEl = byId("replay");
     function markSeen() { try { localStorage.setItem("crayonSeen", "1"); } catch (e) { /* private mode */ } }
+    // "preparing the sim": on the gate I float on the old dot grid, unrendered. Clicking the crayon renders me
+    // (uSim 1 -> 0) and flies me from the gate to my spot while the world draws itself around me.
+    var simFrom = null, heroAnchor = null, heroAt = new THREE.Vector3(), anchorV = new THREE.Vector3(), rayV = new THREE.Vector3(), fwdV = new THREE.Vector3();
+    function gateAnchor() {
+      var portrait = camera.aspect < 1, H = 2.3 * state.hero.scale.y;
+      // landscape: the clear lower-left, under the title card; portrait: between the card and the crayon
+      var frac = portrait ? 0.16 : 0.34, nx = portrait ? 0 : -0.56, ny = portrait ? -0.3 : -0.34;
+      var d = H / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * frac);
+      camera.getWorldDirection(fwdV);
+      rayV.set(nx, ny, 0.5).unproject(camera).sub(camera.position).normalize();
+      anchorV.copy(camera.position).addScaledVector(rayV, d / Math.max(0.2, rayV.dot(fwdV)));
+      world.worldToLocal(anchorV);
+      anchorV.y -= H / 2;
+      return anchorV;
+    }
     function startIntro(skip) {
+      var fromGate = mode === "gate";
       started = true; mode = "intro"; introAt = performance.now(); t0 = introAt;
       var instant = reduce || skip === true;
+      if (!instant && fromGate) simFrom = performance.now(); else simFrom = null;
+      root.classList.remove("sim");
       if (instant) { mode = "home"; homeAt = introAt - 5000; t0 = introAt - 20000; replayEl.hidden = false; markSeen(); }
       // dailies: jump straight to a beat, with the drawing already done
       if (!instant && !scrubbed && DAILIES.on && DAILIES.beat && beatByName[DAILIES.beat]) { scrubbed = true; introAt -= beatByName[DAILIES.beat].start * 1000; t0 = introAt - 20000; }
@@ -421,6 +442,8 @@ export function mountCrayonWorld(root, opts) {
       } else progress = mode === "home" ? 1 : 0;
       var homeBlend = mode === "home" ? (state && state.instant ? 1 : smooth(0, 1, (now - homeAt) / 1600)) : 0;
       root.classList.toggle("home", mode === "home");
+      root.classList.toggle("sim", mode === "gate");
+      shared.uSim.value = mode === "gate" ? 1 : simFrom ? 1 - smooth(0, 1, (now - simFrom - 250) / 1100) : 0;
       var navOn = homeBlend > 0.6 && !section;
       if (navOn !== navShown) { navShown = navOn; navEl.classList.toggle("show", navOn); navEl.toggleAttribute("inert", !navOn); showTunes(navOn); }
       hint.classList.toggle("show", mode === "home" && !section && now - homeAt > 3500 && bite < 0.2);
@@ -454,6 +477,18 @@ export function mountCrayonWorld(root, opts) {
       else rig.aim(c, state, walk, homeBlend, sectionBlend, lastSectionCam, look);
 
       current.update(state, reduce ? 0 : t, { p: info.p, cover: coverCut, section: section, selected: selected, sb: sectionBlend, sbKey: lastSectionKey, T: T, mode: mode, home: homeBlend, homeT: mode === "home" ? (reduce ? 99 : (now - homeAt) / 1000) : 0, burst: reduce ? null : burst, aspect: camera.aspect, progress: progress });
+      if (state.hero) {
+        // the hero's flight from the gate: hold at the gate anchor (bobbing), then ease to where the world put me
+        var fly = mode === "gate" ? 0 : simFrom ? smooth(0, 1, (now - simFrom - 200) / 1500) : 1;
+        if (mode === "gate" || !heroAnchor) heroAnchor = (heroAnchor || new THREE.Vector3()).copy(gateAnchor());
+        if (fly < 1) {
+          var bob = reduce ? 0 : Math.sin(t * 1.3) * 0.18 * state.hero.scale.y;
+          heroAt.copy(state.hero.position);
+          state.hero.position.copy(heroAnchor).add(rayV.set(0, bob, 0)).lerp(heroAt, fly);
+          if (!reduce) { state.hero.rotation.y += Math.sin(t * 0.5) * 0.45 * (1 - fly); state.hero.rotation.z += Math.sin(t * 0.9) * 0.1 * (1 - fly); }
+          state.hero.updateMatrixWorld(true);
+        }
+      }
       if (!reduce) { fadeDoodles(); drawPowder(); }
       renderer.render(scene, camera);
       if (section === "projects" && state.picks) {

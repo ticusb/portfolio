@@ -18,7 +18,7 @@ export function createKit(shared, coarse) {
       vertexShader: fillVert, fragmentShader: fillFrag, side: opts.side || THREE.FrontSide, transparent: opts.alpha != null, depthWrite: opts.alpha == null,
       uniforms: {
         uColor: { value: new THREE.Color(color) }, uShade: { value: new THREE.Color(shade) },
-        uTime: shared.uTime, uDpr: shared.uDpr, uRes: shared.uRes, uReveal: shared.uReveal, uCursor: shared.uCursor,
+        uTime: shared.uTime, uDpr: shared.uDpr, uRes: shared.uRes, uReveal: shared.uReveal, uCursor: shared.uCursor, uSim: shared.uSim, uKeep: { value: 0 },
         uAngle: { value: Math.random() * Math.PI }, uSeed: { value: seed }, uDelay: { value: delay },
         uLump: { value: lump }, uOver: { value: opts.over != null ? opts.over : 0.06 }, uWash: { value: opts.wash ? 1 : 0 }, uAlpha: { value: opts.alpha != null ? opts.alpha : 1 }, uCut: { value: new THREE.Vector3(opts.cut ? opts.cut[0] : 1, opts.cut ? opts.cut[1] : 1, opts.cut ? 1 : 0) },
         uShift: { value: new THREE.Vector2(jitter(8), jitter(6)) }
@@ -31,7 +31,7 @@ export function createKit(shared, coarse) {
       var line = new THREE.Mesh(geom, new THREE.ShaderMaterial({
         vertexShader: lineVert, fragmentShader: lineFrag, side: THREE.BackSide,
         uniforms: {
-          uInk: { value: ink }, uTime: shared.uTime, uDpr: shared.uDpr, uRes: shared.uRes, uReveal: shared.uReveal, uCursor: shared.uCursor,
+          uInk: { value: ink }, uTime: shared.uTime, uDpr: shared.uDpr, uRes: shared.uRes, uReveal: shared.uReveal, uCursor: shared.uCursor, uSim: shared.uSim, uKeep: { value: 0 },
           uSeed: { value: seed }, uDelay: { value: Math.min(1, delay + pass * 0.06) },
           uLump: { value: lump }, uThick: { value: (opts.thick || 0.07) * (pass ? 0.7 : 1) },
           uShift: { value: new THREE.Vector2(jitter(4), jitter(4)) }
@@ -80,7 +80,7 @@ export function createKit(shared, coarse) {
    * transform stays live, so a baked sculpture can still hop. Leave out anything that animates on its own
    * (pass those subtrees in `exclude`); washes, cut-outs and see-through things are skipped automatically.
    */
-  var bakedUniforms = { uTime: shared.uTime, uDpr: shared.uDpr, uRes: shared.uRes, uReveal: shared.uReveal, uCursor: shared.uCursor };
+  var bakedUniforms = { uTime: shared.uTime, uDpr: shared.uDpr, uRes: shared.uRes, uReveal: shared.uReveal, uCursor: shared.uCursor, uSim: shared.uSim };
   var NOBAKE = /[?&]nobake\b/.test(window.location.search); // dailies: compare against the unbaked scene
   // Bakes are queued and run after the world is built (flushBakes): three gives every new object an id from
   // Math.random, so baking mid-build would reshuffle every later object's random crayon angle and seed.

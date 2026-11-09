@@ -12,6 +12,20 @@ export const COMMON = [
   "mat2 rot(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}"
 ].join("\n");
 
+// The unrendered sim: before you pick up the crayon, I float on the old site's dot grid as a matte grey figure
+// with green outlines (the old site's accent). Only the hero (uKeep = 1) shows then; as uSim falls to 0 after
+// the click, crayon colour scribbles across me in a noisy front.
+export const SIM = [
+  "uniform float uSim; uniform float uKeep;",
+  "float simFront(vec2 p, float seed){ return noise(p*0.035 + seed)*0.7 + 0.15; }",
+  "vec3 simBody(vec3 n, vec2 p){",
+  "  float d = dot(normalize(n), normalize(vec3(-0.45,0.7,0.55)))*0.5 + 0.5;",
+  "  vec3 c = mix(vec3(0.60, 0.61, 0.60), vec3(0.94, 0.94, 0.93), d);",
+  "  vec2 g = fract(p / 28.0) - 0.5;",
+  "  return mix(c, c * 0.82, step(length(g), 0.08));",
+  "}"
+].join("\n");
+
 export const EDGE = [
   "uniform vec2 uRes;",
   "vec3 codeWall(vec2 p, float time){",
@@ -70,7 +84,7 @@ export const fillVert = [
 
 // quieter than v3: denser coverage, finer tooth, softer shading, fewer missed patches
 export const fillFrag = [
-  COMMON,
+  COMMON, SIM,
   "uniform vec3 uColor; uniform vec3 uShade; uniform float uAngle; uniform float uSeed; uniform float uDpr; uniform float uReveal; uniform float uDelay; uniform float uTime; uniform float uWash; uniform float uAlpha; uniform vec3 uCut;",
   "varying vec3 vN; varying vec3 vObj; varying vec3 vWorld;",
   EDGE,
@@ -80,8 +94,9 @@ export const fillFrag = [
   "  vec2 p = gl_FragCoord.xy / uDpr;",
   "  vec3 dir = normalize(vec3(cos(uAngle), sin(uAngle), 0.25));",
   "  float sweep = dot(normalize(vObj + 1e-4), dir)*0.5 + 0.5;",
-  "  if (uDelay*0.6 + sweep*0.28 + noise(p*0.05)*0.08 + 0.3 > uReveal*1.6) discard;",
+  "  if (uKeep < 0.5 && uDelay*0.6 + sweep*0.28 + noise(p*0.05)*0.08 + 0.3 > uReveal*1.6) discard;",
   "  if (uCut.z > 0.5) { vec3 oc = normalize(vObj); if (oc.z > 0.0 && length(vec2(oc.x / uCut.x, (oc.y + 0.05) / uCut.y)) < 1.0) discard; }",
+  "  if (uKeep > 0.5 && simFront(p, uSeed) < uSim) { gl_FragColor = vec4(simBody(vN, p), uAlpha); return; }",
   "  if (dissolve(p) > 0.5) { gl_FragColor = vec4(codeWall(p, uTime), 1.0); return; }",
   "  if (uWash > 0.5) { float tw = noise(p*0.9)*0.5 + noise(p*0.31)*0.5; gl_FragColor = vec4(uColor * (0.965 + 0.05*tw) * (1.0 - 0.025*step(0.72, noise(p*0.01 + uSeed))), 1.0); return; }",
   "  float rn = noise(p*0.004 + uSeed);",
@@ -122,13 +137,15 @@ export const lineVert = [
 ].join("\n");
 
 export const lineFrag = [
-  COMMON,
+  COMMON, SIM,
   "uniform vec3 uInk; uniform float uDpr; uniform float uReveal; uniform float uDelay; uniform float uSeed; uniform float uTime;",
   "varying float vAng; varying vec3 vWorld;",
   EDGE,
   "void main(){",
   // the outline goes on after the fill has covered the shape (a shell with nothing in front of it is a black blob)
-  "  if (uDelay*0.6 + 0.68 + vAng*0.15 > uReveal*1.6) discard;",
+  "  vec2 p0 = gl_FragCoord.xy / uDpr;",
+  "  if (uKeep < 0.5 && uDelay*0.6 + 0.68 + vAng*0.15 > uReveal*1.6) discard;",
+  "  if (uKeep > 0.5 && simFront(p0, uSeed) < uSim) { gl_FragColor = vec4(0.086, 0.639, 0.290, 1.0); return; }",
   "  if (dissolve(gl_FragCoord.xy / uDpr) > 0.5) discard;",
   "  vec2 p = gl_FragCoord.xy / uDpr;",
   "  if (noise(vec2(vAng*16.0, uSeed)) < 0.18) discard;",
@@ -142,13 +159,13 @@ export const faceVert = [
   "void main(){ vN = normalize(normalMatrix * normal); vObj = position; vWorld = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }"
 ].join("\n");
 export const faceFrag = [
-  COMMON,
+  COMMON, SIM,
   "uniform sampler2D uFace; uniform vec3 uSkin; uniform vec3 uHair; uniform float uReveal; uniform float uDelay; uniform float uTime; uniform float uDpr;",
   "varying vec3 vN; varying vec3 vObj; varying vec3 vWorld;",
   EDGE,
   "void main(){",
   "  vec2 p = gl_FragCoord.xy / uDpr;",
-  "  if (uDelay*0.6 + 0.3 + noise(p*0.05)*0.1 > uReveal*1.6) discard;",
+  "  if (uKeep < 0.5 && uDelay*0.6 + 0.3 + noise(p*0.05)*0.1 > uReveal*1.6) discard;",
   "  if (dissolve(p) > 0.5) { gl_FragColor = vec4(codeWall(p, uTime), 1.0); return; }",
   "  vec3 o = normalize(vObj);",
   "  vec2 uv = vec2(0.51 + o.x * 0.3, 0.42 + o.y * 0.38);",
@@ -207,7 +224,7 @@ function bakeFrag(src, swaps, consts) {
 }
 export const bakedFillFrag = bakeFrag(fillFrag,
   { uColor: ["vec3", "vColor"], uShade: ["vec3", "vShade"], uSeed: ["float", "vSeed"], uAngle: ["float", "vAngle"], uDelay: ["float", "vDelay"] },
-  { uWash: "0.0", uAlpha: "1.0", uCut: "vec3(1.0, 1.0, 0.0)" });
+  { uWash: "0.0", uAlpha: "1.0", uCut: "vec3(1.0, 1.0, 0.0)", uKeep: "0.0" });
 
 export const bakedLineVert = [
   BAKED_HEAD,
@@ -224,4 +241,4 @@ export const bakedLineVert = [
   "}"
 ].join("\n");
 export const bakedLineFrag = bakeFrag(lineFrag,
-  { uInk: ["vec3", "vInk"], uSeed: ["float", "vSeed"], uDelay: ["float", "vDelay"] }, {});
+  { uInk: ["vec3", "vInk"], uSeed: ["float", "vSeed"], uDelay: ["float", "vDelay"] }, { uKeep: "0.0" });

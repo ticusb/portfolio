@@ -48,6 +48,7 @@ export function createSpace(kit) {
       // me, floating
       s.me = avatar(26, "#e8412c", "#8f1d10", { astro: true });
       put(s.me.group, w, [2, -0.2, -3], 0.9);
+      s.hero = s.me.group;
       // nav: little things orbiting me once I'm caught
       s.nav = new THREE.Group(); w.add(s.nav);
       s.anchors = [];
