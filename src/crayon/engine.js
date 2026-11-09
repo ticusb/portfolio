@@ -11,6 +11,9 @@
  */
 /* eslint-disable no-redeclare, no-loop-func */
 import * as THREE from "three";
+import projectData from "../data/projects";
+
+const PROJECTS = projectData.filter(function (p) { return !p.draft; });
 
 const FACE_URL = (process.env.PUBLIC_URL || "") + "/crayon/face.png";
 
@@ -31,6 +34,8 @@ export function mountCrayonWorld(root) {
   byId("gate").hidden = false;
   byId("replay").hidden = true;
   byId("tunes").hidden = true;
+  byId("panel").hidden = true;
+  byId("picks").hidden = true;
   byId("rec-form").hidden = true;
   byId("worldnav").classList.remove("show", "static");
   byId("worldnav").setAttribute("inert", "");
@@ -111,6 +116,7 @@ export function mountCrayonWorld(root) {
   var look = { yaw: 0, pitch: 0, tx: 0, ty: 0 };
   listen(window, "pointermove", function (e) {
     if (e.pointerType === "mouse") {
+      look.ui = !!(e.target && e.target.closest && e.target.closest(".tunes, .panel, .picker, .worldnav a, .replay, .pick, .gate"));
       look.tx = (e.clientX / window.innerWidth - 0.5) * 2;
       look.ty = (e.clientY / window.innerHeight - 0.5) * 2;
       if (Math.abs(look.tx) > 0.2) hint.style.opacity = "0";
@@ -310,7 +316,7 @@ export function mountCrayonWorld(root) {
     // quieter than v3: denser coverage, finer tooth, softer shading, fewer missed patches
     var fillFrag = [
       COMMON,
-      "uniform vec3 uColor; uniform vec3 uShade; uniform float uAngle; uniform float uSeed; uniform float uDpr; uniform float uReveal; uniform float uDelay; uniform float uGlitch; uniform float uTime; uniform float uWash; uniform float uAlpha;",
+      "uniform vec3 uColor; uniform vec3 uShade; uniform float uAngle; uniform float uSeed; uniform float uDpr; uniform float uReveal; uniform float uDelay; uniform float uGlitch; uniform float uTime; uniform float uWash; uniform float uAlpha; uniform vec3 uCut;",
       "varying vec3 vN; varying vec3 vObj; varying vec3 vWorld;",
       EDGE,
       "void main(){",
@@ -320,6 +326,7 @@ export function mountCrayonWorld(root) {
       "  vec3 dir = normalize(vec3(cos(uAngle), sin(uAngle), 0.25));",
       "  float sweep = dot(normalize(vObj + 1e-4), dir)*0.5 + 0.5;",
       "  if (uDelay*0.6 + sweep*0.28 + noise(p*0.05)*0.08 + 0.3 > uReveal*1.6) discard;",
+      "  if (uCut.z > 0.5) { vec3 oc = normalize(vObj); if (oc.z > 0.0 && length(vec2(oc.x / uCut.x, (oc.y + 0.05) / uCut.y)) < 1.0) discard; }",
       "  if (uGlitch > 0.0) {",
       "    float band = step(1.0 - uGlitch, hash(vec2(floor(gl_FragCoord.y/(5.0*uDpr)), floor(uTime*12.0))));",
       "    if (band > 0.5) {",
@@ -397,7 +404,7 @@ export function mountCrayonWorld(root) {
           uColor: { value: new THREE.Color(color) }, uShade: { value: new THREE.Color(shade) },
           uTime: shared.uTime, uDpr: shared.uDpr, uRes: shared.uRes, uReveal: shared.uReveal, uGlitch: shared.uGlitch, uWorldInv: shared.uWorldInv, uHomeDir: shared.uHomeDir, uHalfFov: shared.uHalfFov, uVig: shared.uVig, uCursor: shared.uCursor, uBite: shared.uBite,
           uAngle: { value: Math.random() * Math.PI }, uSeed: { value: seed }, uDelay: { value: delay },
-          uLump: { value: lump }, uOver: { value: opts.over != null ? opts.over : 0.06 }, uWash: { value: opts.wash ? 1 : 0 }, uAlpha: { value: opts.alpha != null ? opts.alpha : 1 }, uDome: { value: (opts.side === THREE.BackSide || opts.viewEdge) ? 1 : 0 },
+          uLump: { value: lump }, uOver: { value: opts.over != null ? opts.over : 0.06 }, uWash: { value: opts.wash ? 1 : 0 }, uAlpha: { value: opts.alpha != null ? opts.alpha : 1 }, uCut: { value: new THREE.Vector3(opts.cut ? opts.cut[0] : 1, opts.cut ? opts.cut[1] : 1, opts.cut ? 1 : 0) }, uDome: { value: (opts.side === THREE.BackSide || opts.viewEdge) ? 1 : 0 },
           uShift: { value: new THREE.Vector2(jitter(8), jitter(6)) }
         }
       })));
@@ -431,6 +438,7 @@ export function mountCrayonWorld(root) {
     var cone = new THREE.ConeGeometry(1, 1, 40, 6);
     var cyl = new THREE.CylinderGeometry(1, 1, 1, 24, 6);
     var torus = new THREE.TorusGeometry(1, 0.22, 12, 32);
+    var thinTorus = new THREE.TorusGeometry(1, 0.1, 10, 48);
     var plane = new THREE.PlaneGeometry(1, 1, 30, 20);
     // a sphere pushed toward a cube: boxy but with smooth normals, so the lumps and outlines don't crack
     var box = (function () {
@@ -491,12 +499,10 @@ export function mountCrayonWorld(root) {
       "  if (uDelay*0.6 + 0.3 + noise(p*0.05)*0.1 > uReveal*1.6) discard;",
       "  if (dissolve(vWorld, p) > 0.5) { gl_FragColor = vec4(codeWall(p, uTime), 1.0); return; }",
       "  vec3 o = normalize(vObj);",
-      "  float lon = atan(o.x, o.z);",
-      "  float lat = asin(clamp(o.y, -1.0, 1.0));",
-      "  vec2 uv = vec2(0.51 + lon * 0.2, 0.5 + lat * 0.345);",
-      "  float m = smoothstep(1.0, 0.84, length(vec2(lon / 1.32, (lat + 0.04) / 1.3)));",
-      "  vec3 tex = texture2D(uFace, uv).rgb;",
-      "  vec3 outside = mix(uSkin, uHair, smoothstep(0.05, 0.3, o.y + (o.z < 0.0 ? 0.45 : 0.0)));",
+      "  vec2 uv = vec2(0.51 + o.x * 0.3, 0.42 + o.y * 0.38);",
+      "  float m = smoothstep(0.95, 0.82, length(vec2(o.x / 0.8, (o.y + 0.05) / 0.92))) * smoothstep(0.0, 0.2, o.z);",
+      "  vec3 tex = texture2D(uFace, clamp(uv, 0.0, 1.0)).rgb;",
+      "  vec3 outside = uSkin + uHair * 0.0;",
       "  vec3 col = mix(outside, tex, m);",
       "  col = mix(col, floor(col * 7.0 + 0.5) / 7.0, 0.3);",
       "  float tooth = noise(p * 1.4) * 0.5 + noise(p * 0.45) * 0.5;",
@@ -521,15 +527,22 @@ export function mountCrayonWorld(root) {
         }
       });
       put(h, head, [0, 0, 0], [0.66, 0.72, 0.64]);
-      // modeled hair: covers the back and crown so the head reads from every side
-      put(crayon(halfSphere, "#2b211c", "#120c09", { thick: 0.04, lump: 0.08, order: order }), head, [0, 0.02, -0.03], [0.69, 0.75, 0.68], [-Math.PI / 2 - 0.25, 0, 0]);
-      put(crayon(halfSphere, "#2b211c", "#120c09", { thick: 0.03, lump: 0.1, order: order }), head, [0, 0.3, -0.06], [0.67, 0.44, 0.64], [-0.2, 0, 0]);
+      // the helmet: a shell over the whole head with an oval opening, so the photo face sits in a frame
+      var shellC = astro ? ["#f4f4f0", "#9a9cab"] : ["#e8412c", "#8f1d10"];
+      put(crayon(sphere, shellC[0], shellC[1], { thick: 0.06, lump: 0.015, cut: [0.8, 0.92], order: order + 0.3 }), head, [0, 0, 0], [0.71, 0.78, 0.69]);
+      put(crayon(thinTorus, astro ? "#c4c8d4" : "#ffc93c", astro ? "#7a7d92" : "#c27a00", { thick: 0.03, lump: 0.02, order: order + 0.4 }), head, [0, -0.04, 0.4], [0.57, 0.72, 0.5], [-0.08, 0, 0]);
       if (astro) {
-        put(crayon(sphere, "#cfefff", "#5b8fd6", { noLine: true, lump: 0, over: 0, alpha: 0.22, order: order + 0.5 }), head, [0, 0.02, 0], [0.92, 0.94, 0.9]);
-        put(crayon(torus, "#e4e6ee", "#8d91a3", { thick: 0.04, lump: 0.02, order: order + 0.5 }), head, [0, -0.62, 0], [0.62, 0.62, 0.5], [Math.PI / 2, 0, 0]);
+        put(crayon(sphere, "#cfefff", "#5b8fd6", { noLine: true, lump: 0, over: 0, alpha: 0.2, order: order + 0.5 }), head, [0, 0.02, 0.04], [0.86, 0.92, 0.86]);
+        put(crayon(torus, "#e4e6ee", "#8d91a3", { thick: 0.04, lump: 0.02, order: order + 0.5 }), head, [0, -0.66, 0], [0.62, 0.62, 0.5], [Math.PI / 2, 0, 0]);
+        put(crayon(cyl, "#c4c8d4", "#7a7d92", { thick: 0.03, lump: 0.02, order: order + 0.5 }), head, [0.42, 0.62, -0.1], [0.025, 0.3, 0.025], [0, 0, -0.35]);
+        put(crayon(sphere, "#e8412c", "#8f1d10", { noLine: true, lump: 0.05, order: order + 0.5 }), head, [0.48, 0.78, -0.1], 0.06);
       } else {
-        put(crayon(halfSphere, "#ffc93c", "#c27a00", { thick: 0.04, lump: 0.05, order: order + 0.5 }), head, [0, 0.36, -0.14], [0.7, 0.46, 0.66], [-0.45, 0, 0]);
-        put(crayon(sphere, "#f27bb0", "#a8306b", { thick: 0.03, lump: 0.12, order: order + 0.5 }), head, [0, 0.82, -0.42], 0.14);
+        // goggles pushed up on top, and a racing stripe
+        [-1, 1].forEach(function (sd) {
+          put(crayon(sphere, "#7fd3ff", "#2f7de1", { thick: 0.04, lump: 0.03, order: order + 0.5 }), head, [sd * 0.2, 0.66, 0.26], [0.17, 0.12, 0.08], [-0.75, sd * 0.25, 0]);
+        });
+        put(crayon(box, "#2b2340", "#120f22", { noLine: true, lump: 0.01, order: order + 0.5 }), head, [0, 0.66, 0.24], [0.06, 0.03, 0.05], [-0.75, 0, 0]);
+        put(crayon(box, "#ffffff", "#c9ccd6", { noLine: true, lump: 0.01, order: order + 0.5 }), head, [0, 0.62, -0.32], [0.07, 0.04, 0.42], [0.62, 0, 0]);
       }
       head.position.y = 1.62;
       g.add(head);
@@ -568,7 +581,7 @@ export function mountCrayonWorld(root) {
         var pl = new THREE.Group();
         put(crayon(sphere, "#ff8a3d", "#b23a48", { thick: 0.06, lump: 0.12, order: 8 }), pl, [0, 0, 0], 2.2);
         put(crayon(torus, "#f27bb0", "#a8306b", { thick: 0.04, lump: 0.05, order: 10 }), pl, [0, 0, 0], [3.4, 3.4, 0.5], [1.25, 0.3, 0]);
-        s.planet = put(pl, w, [-9, 4.5, -13]);
+        s.planet = put(pl, w, [11, -1.5, -15]);
         var mo = new THREE.Group();
         put(crayon(sphere, "#d6d8e2", "#7a7d92", { thick: 0.06, lump: 0.15, order: 12 }), mo, [0, 0, 0], 1.3);
         [[0.4, 0.3], [-0.5, -0.2], [0.1, -0.6]].forEach(function (k) { put(crayon(sphere, "#aeb3c2", "#5a5f78", { noLine: true, lump: 0.1, order: 13 }), mo, [k[0], k[1], 1.05], [0.32, 0.32, 0.15]); });
@@ -616,6 +629,45 @@ export function mountCrayonWorld(root) {
         s.shoot = put(sh, w, [14, 8, -14]);
         s.focus = new THREE.Vector3(2, 0.8, -3);
         s.homeCam = { pos: [2, 1.8, 11.5], look: [2, 1.9, -3], fov: 42 };
+        // projects: a patch of sky with one constellation per project
+        var SHAPES = [
+          { pts: [[0, 1.2], [0.8, 0.3], [0, -1], [-0.8, 0.3]], edges: [[0, 1], [1, 2], [2, 3], [3, 0], [0, 2]] },
+          { pts: [[-1.2, 0.8], [-0.6, -0.4], [0, 0.4], [0.6, -0.4], [1.2, 0.8]], edges: [[0, 1], [1, 2], [2, 3], [3, 4]] },
+          { pts: [[-1.2, 0.4], [-0.6, 0.5], [0, 0.3], [0.5, 0.2], [0.6, -0.5], [1.3, -0.5], [1.3, 0.1]], edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 3]] },
+          { pts: [[0, 1], [0.9, -0.5], [-0.9, -0.5], [0, -1.3]], edges: [[0, 1], [1, 2], [2, 0], [2, 3]] },
+          { pts: [[-1.2, -0.6], [-0.4, 0.4], [0.3, -0.3], [1.2, 0.7], [0.7, 0.7], [1.2, 0.2]], edges: [[0, 1], [1, 2], [2, 3], [3, 4], [3, 5]] },
+          { pts: [[-0.6, 1], [0.6, 1], [0.6, -1], [-0.6, -1], [0, 1.4]], edges: [[0, 1], [1, 2], [2, 3], [3, 0], [0, 4], [1, 4]] },
+          { pts: [[-1.2, 0], [1.2, 0], [0, 0.9], [0, -0.9], [1.2, 0.5]], edges: [[0, 1], [2, 3], [1, 4]] }
+        ];
+        s.picks = [];
+        var up = new THREE.Vector3(0, 1, 0);
+        PROJECTS.forEach(function (proj, i) {
+          var shape = SHAPES[i % SHAPES.length];
+          var g = new THREE.Group();
+          var col = i < 4 ? i : i - 4, row = i < 4 ? 0 : 1;
+          g.position.set(-15 + col * 3.6 + row * 1.8, 8.6 - row * 3.6, -15 + (i % 2) * 1.2);
+          g.scale.setScalar(1.05);
+          var stars = [], lines = [];
+          shape.pts.forEach(function (pt) {
+            var st = put(crayon(sphereLo, "#fff3b0", "#e0a800", { noLine: true, lump: 0.25, order: 9 }), g, [pt[0], pt[1], 0], 0.13);
+            stars.push(st);
+          });
+          shape.edges.forEach(function (e) {
+            var a = new THREE.Vector3(shape.pts[e[0]][0], shape.pts[e[0]][1], 0), b = new THREE.Vector3(shape.pts[e[1]][0], shape.pts[e[1]][1], 0);
+            var mid = a.clone().add(b).multiplyScalar(0.5), dir = b.clone().sub(a), len = dir.length();
+            var ln = crayon(cyl, "#8fa6e6", "#4f6bc0", { noLine: true, lump: 0.02, order: 9.5 });
+            ln.position.copy(mid); ln.scale.set(0.028, len, 0.028);
+            ln.quaternion.setFromUnitVectors(up, dir.normalize());
+            g.add(ln); lines.push(ln);
+          });
+          var tip = new THREE.Object3D(); tip.position.set(0, 1.7, 0); g.add(tip);
+          w.add(g);
+          s.picks.push({ slug: proj.slug, group: g, tip: tip, stars: stars, lines: lines });
+        });
+        s.sections = {
+          about: { cam: { pos: [3.4, 2.0, 3.6], look: [0.4, 1.7, -3], fov: 40 } },
+          projects: { cam: { pos: [-7.5, 5.4, 2.5], look: [-11.6, 6.6, -15], fov: 50 } }
+        };
         return s;
       },
       update: function (s, t, info) {
@@ -652,6 +704,12 @@ export function mountCrayonWorld(root) {
         s.shoot.position.set(14 - st * 32, 8 - st * 6, -14);
         s.stars.forEach(function (sr, i) { if (i % 5 === 0) sr.visible = Math.sin(t * 2 + i) > -0.6; });
         s.focus.set(me.group.position.x, me.group.position.y + 1.0, -3);
+        // constellations: a soft twinkle; the one you picked lights up
+        s.picks.forEach(function (pk, i) {
+          var on = info.selected === pk.slug, inProjects = info.section === "projects";
+          pk.stars.forEach(function (st, j) { st.scale.setScalar((0.13 + 0.03 * Math.sin(t * 2.2 + i + j * 1.7)) * (on ? 1.6 : 1)); });
+          pk.lines.forEach(function (ln) { ln.children[0].material.uniforms.uColor.value.set(on ? "#fff2a8" : inProjects ? "#b4c4ff" : "#8fa6e6"); });
+        });
       },
       navText: { about: "about ★", projects: "projects ▣", monologue: "monologue ✎" },
       cam: { walk: [1, 0.6, -6], look: [0, 0, -5], lookWalk: [2, 1.4, 0], yaw: -0.25, orbit: 0.35, follow: 0.4 }
@@ -690,7 +748,7 @@ export function mountCrayonWorld(root) {
           });
           return put(g, w, [x, GROUND, z], sz, [0, Math.random() * 6, 0]);
         }
-        [[-13, -7, 1.2], [-10.5, -4.5, 1.05], [-14, -1.5, 1.0], [14, -12, 1.3], [12.8, -2.2, 1.1], [-6.5, 1.8, 0.8], [-16, 3, 0.95], [16, 0.5, 1.0], [11.5, -10.5, 1.1], [3, -15, 1.2]].forEach(function (t, i) {
+        [[-13, -7, 1.2], [-10.5, -4.5, 1.05], [-14, -1.5, 1.0], [24, -12, 1.3], [11.2, -1.4, 1.1], [-6.5, 1.8, 0.8], [-16, 3, 0.95], [24.5, -2, 1.0], [10.5, -13, 1.1], [3, -15, 1.2]].forEach(function (t, i) {
           tree(t[0], t[1], t[2], 6 + i * 0.6);
         });
         // the shoulder off the mountain's right side, broken by a real gap: the crevasse
@@ -902,6 +960,79 @@ export function mountCrayonWorld(root) {
 
         s.focus = new THREE.Vector3();
         s.homeCam = { pos: [s.S.x + 0.3, GROUND + 2.6, s.S.z + 8.2], look: [s.S.x - 0.2, GROUND + 1.6, s.S.z - 3], fov: 48 };
+        // about: me, chilling on a snow ledge at the summit
+        var M = s.main, top = GROUND + M.H;
+        put(crayon(sphere, "#f4f8ff", "#9db8e8", { thick: 0.06, lump: 0.12, ink: INK, order: 4 }), w, [M.x + 0.15, top - 0.78, M.z + 0.45], [0.8, 0.24, 0.7]);
+        var chill = avatar(40, "#e8412c", "#8f1d10");
+        chill.legs.forEach(function (lg) { lg.rotation.x = -1.35; });
+        chill.body.rotation.x = -0.3;
+        chill.hands[0].position.set(-0.6, 0.45, -0.25); chill.hands[1].position.set(0.6, 0.45, -0.25);
+        s.chill = put(chill.group, w, [M.x + 0.2, top - 0.9, M.z + 0.75], 0.001, [0, 0.4, 0]);
+        s.chillHead = chill.head;
+        // projects: a snow sculpture garden in the valley, one per project
+        function mound(g, sx, sz) { put(crayon(sphere, "#f4f8ff", "#9db8e8", { thick: 0.05, lump: 0.15, ink: INK, order: 20 }), g, [0, 0, 0], [sx, 0.32, sz]); }
+        var snow = ["#f6f9ff", "#9db8e8"], ice = ["#cfefff", "#5b8fd6"];
+        var KINDS = {
+          plane: function (g) { mound(g, 1.9, 1.3);
+            put(crayon(sphere, snow[0], snow[1], { thick: 0.06, lump: 0.08, ink: INK, order: 21 }), g, [0, 0.95, 0], [1.6, 0.42, 0.42]);
+            put(crayon(box, snow[0], snow[1], { thick: 0.05, lump: 0.05, ink: INK, order: 21 }), g, [0.1, 0.95, 0], [0.35, 0.06, 1.7]);
+            put(crayon(box, snow[0], snow[1], { thick: 0.05, lump: 0.05, ink: INK, order: 21 }), g, [-1.35, 1.35, 0], [0.25, 0.42, 0.05]);
+            put(crayon(box, snow[0], snow[1], { thick: 0.05, lump: 0.05, ink: INK, order: 21 }), g, [-1.35, 1.0, 0], [0.22, 0.05, 0.6]);
+            return 2.0; },
+          fort: function (g) { mound(g, 2.0, 1.4);
+            for (var i = -2; i <= 2; i++) { put(crayon(box, snow[0], snow[1], { thick: 0.04, lump: 0.06, ink: INK, order: 21 }), g, [i * 0.62, 0.45, -0.6], [0.29, 0.3, 0.3]); if (i % 2 === 0) put(crayon(box, snow[0], snow[1], { thick: 0.04, lump: 0.06, ink: INK, order: 21 }), g, [i * 0.62, 1.05, -0.6], [0.24, 0.24, 0.24]); }
+            [-1, 1].forEach(function (sd) { for (var j = 0; j < 2; j++) put(crayon(box, snow[0], snow[1], { thick: 0.04, lump: 0.06, ink: INK, order: 21 }), g, [sd * 1.3, 0.45, -0.05 + j * 0.62], [0.29, 0.3, 0.3]); });
+            return 1.6; },
+          snowman: function (g) { mound(g, 1.2, 1.2);
+            [[0.75, 0.7], [0.55, 1.75], [0.4, 2.5]].forEach(function (b) { put(crayon(sphere, snow[0], snow[1], { thick: 0.06, lump: 0.1, ink: INK, order: 21 }), g, [0, b[1], 0], b[0]); });
+            [-1, 1].forEach(function (sd) {
+              put(crayon(sphere, "#141414", "#141414", { noLine: true, lump: 0.02, order: 22 }), g, [sd * 0.13, 2.62, 0.35], 0.055);
+              put(crayon(cyl, "#7a4a33", "#3e2414", { thick: 0.02, lump: 0.02, order: 22 }), g, [sd * 0.85, 1.95, 0], [0.04, 0.9, 0.04], [0, 0, -sd * 1.0]);
+            });
+            put(crayon(cone, "#ff9f1c", "#c2410c", { thick: 0.03, lump: 0.03, order: 22 }), g, [0, 2.5, 0.52], [0.07, 0.35, 0.07], [Math.PI / 2, 0, 0]);
+            put(crayon(cyl, "#2b2340", "#120f22", { thick: 0.03, lump: 0.02, order: 22 }), g, [0, 2.95, 0], [0.32, 0.4, 0.32]);
+            put(crayon(cyl, "#2b2340", "#120f22", { thick: 0.03, lump: 0.02, order: 22 }), g, [0, 2.77, 0], [0.5, 0.04, 0.5]);
+            return 3.3; },
+          castle: function (g) { mound(g, 1.9, 1.4);
+            put(crayon(box, ice[0], ice[1], { thick: 0.05, lump: 0.04, ink: INK, order: 21 }), g, [0, 0.7, 0], [0.75, 0.7, 0.55]);
+            [-1, 1].forEach(function (sd) {
+              put(crayon(cyl, ice[0], ice[1], { thick: 0.05, lump: 0.04, ink: INK, order: 21 }), g, [sd * 1.0, 1.0, 0], [0.38, 2.0, 0.38]);
+              put(crayon(cone, "#7fb3ff", "#2f5fb0", { thick: 0.05, lump: 0.05, ink: INK, order: 22 }), g, [sd * 1.0, 2.4, 0], [0.48, 0.8, 0.48]);
+            });
+            put(crayon(cone, "#7fb3ff", "#2f5fb0", { thick: 0.05, lump: 0.05, ink: INK, order: 22 }), g, [0, 1.75, 0], [0.62, 0.7, 0.5]);
+            return 2.9; },
+          igloo: function (g) { mound(g, 1.7, 1.6);
+            put(crayon(halfSphere, snow[0], snow[1], { thick: 0.06, lump: 0.06, ink: INK, order: 21 }), g, [0, 0.05, 0], [1.25, 1.1, 1.25]);
+            put(crayon(cyl, snow[0], snow[1], { thick: 0.05, lump: 0.05, ink: INK, order: 21 }), g, [0, 0.35, 1.1], [0.5, 0.75, 0.5], [Math.PI / 2, 0, 0]);
+            put(crayon(sphere, "#2b2340", "#120f22", { noLine: true, lump: 0.02, order: 22 }), g, [0, 0.38, 1.47], [0.33, 0.33, 0.04]);
+            return 1.4; },
+          icemac: function (g) { mound(g, 1.3, 1.3);
+            put(crayon(box, ice[0], ice[1], { thick: 0.05, lump: 0.03, ink: INK, order: 21 }), g, [0, 1.25, 0], [0.62, 1.15, 1.0]);
+            [-1, 1].forEach(function (sd) { put(crayon(torus, ice[0], ice[1], { thick: 0.04, lump: 0.02, order: 22 }), g, [0, 2.45, sd * 0.55], [0.38, 0.3, 0.38], [0, Math.PI / 2, 0]); });
+            for (var r = 0; r < 4; r++) for (var c = 0; c < 3; c++) put(crayon(sphere, "#5b8fd6", "#2f5fb0", { noLine: true, lump: 0.02, order: 22 }), g, [0.63, 1.85 - r * 0.32, -0.32 + c * 0.32], 0.06);
+            return 2.8; },
+          pyramid: function (g) { mound(g, 1.6, 1.2);
+            [[-0.9, 0.45], [0, 0.45], [0.9, 0.45], [-0.45, 1.2], [0.45, 1.2], [0, 1.95]].forEach(function (b) { put(crayon(sphere, snow[0], snow[1], { thick: 0.05, lump: 0.12, ink: INK, order: 21 }), g, [b[0], b[1], 0], 0.46); });
+            return 2.4; }
+        };
+        var KIND_FOR = { "v1-ready": "plane", "qb-import": "fort", "habitgotchi": "snowman", "this-is-art": "castle", "rust-http-client": "igloo", "homelab-server": "icemac", "ozzy-portfolio": "pyramid" };
+        var GC = new THREE.Vector3(17, GROUND, -7);
+        s.picks = [];
+        PROJECTS.forEach(function (proj, i) {
+          var g = new THREE.Group();
+          var a = Math.PI * 1.08 - (i / Math.max(1, PROJECTS.length - 1)) * Math.PI * 1.16;
+          g.position.set(GC.x + Math.cos(a) * 5.2, GROUND, GC.z - Math.sin(a) * 3.0);
+          g.rotation.y = -Math.cos(a) * 0.35;
+          var h = (KINDS[KIND_FOR[proj.slug]] || KINDS.igloo)(g);
+          var tip = new THREE.Object3D(); tip.position.set(0, h + 0.5, 0); g.add(tip);
+          g.userData.slug = proj.slug;
+          w.add(g);
+          s.picks.push({ slug: proj.slug, group: g, tip: tip, pop: 1 });
+        });
+        s.sections = {
+          about: { cam: { pos: [M.x + 3.6, top + 1.2, M.z + 7.6], look: [M.x - 1.6, top - 0.3, M.z + 0.6], fov: 42 } },
+          projects: { cam: { pos: [GC.x + 1.4, GROUND + 4.6, GC.z + 10.5], look: [GC.x - 2.6, GROUND + 1.1, GC.z - 0.5], fov: 50 } }
+        };
         return s;
       },
       update: function (s, t, info) {
@@ -983,6 +1114,16 @@ export function mountCrayonWorld(root) {
           d.head.rotation.y = Math.atan2(p.x - pg.position.x, p.z - pg.position.z);
           d.head.rotation.x = -0.25 - near * 0.6;
         });
+        // the summit me shows up for about; the picked sculpture does a little hop
+        s.chillShow = info.sbKey === "about" ? (info.sb || 0) : 0;
+        s.chill.scale.setScalar(Math.max(0.001, s.chillShow) * 1.1);
+        s.chillHead.rotation.y = Math.sin(t * 0.6) * 0.25;
+        s.picks.forEach(function (pk) {
+          var on = info.selected === pk.slug;
+          pk.pop += ((on ? 1.12 : 1) - pk.pop) * 0.1;
+          pk.group.scale.setScalar(pk.pop);
+          pk.group.position.y = s.GROUND + (on ? Math.abs(Math.sin(t * 4)) * 0.18 : 0);
+        });
         s.sun.rotation.z = t * 0.05;
         s.clouds[0].position.x = -14 + Math.sin(t * 0.15) * 1.2;
         s.clouds[1].position.x = 9 + Math.sin(t * 0.12 + 2) * 1.0;
@@ -1018,22 +1159,137 @@ export function mountCrayonWorld(root) {
       canvas.setAttribute("aria-label", name === "space"
         ? "A crayon drawing in space: Ticus floats in an astronaut suit until a UFO flies by and beams him up. Links orbit around him."
         : "A crayon drawing of a ski run: Ticus carves down a blue mountain, spins through a ring of fire over a lava crevasse, and stops by the camera. Penguins hold the links.");
-      if (started) startIntro(); else { mode = "gate"; replayScrawls(); }
+      section = null; selected = null; sectionBlend = 0; panelEl.hidden = true; picksEl.hidden = true;
+      buildPicks();
+      if (started) startIntro(false); else { mode = "gate"; replayScrawls(); }
     }
     var navShown = false;
-    canDraw = function () { return mode === "home"; };
+    // sections: about and projects open inside the world instead of leaving the page
+    var lastSectionKey = null;
+    var section = null, selected = null, sectionBlend = 0, lastSectionCam = null, sectionAt = 0, sectionLeftAt = 0, blendFrom = 0;
+    var panelEl = byId("panel"), panelBody = byId("panel-body"), panelBack = byId("panel-close"), picksEl = byId("picks");
+    function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+    function link(href, text, external) { var a = el("a", null, text); a.href = href; if (external) { a.target = "_blank"; a.rel = "noreferrer"; } return a; }
+    function fillPanel(title, build) {
+      panelBody.textContent = "";
+      var h = el("h2", "panel-title", title); h.id = "panel-title"; h.tabIndex = -1;
+      panelBody.appendChild(h); build(panelBody);
+      panelEl.hidden = false; panelEl.scrollTop = 0; h.focus({ preventScroll: true });
+    }
+    function aboutPanel() {
+      fillPanel("about", function (b) {
+        b.appendChild(el("p", "panel-lede", "I'm Ticus. D365 developer \u00b7 Colorado State \u201924."));
+        b.appendChild(el("p", null, "Enterprise ERP solutions by day. Creative of anything and everything by night."));
+        b.appendChild(el("h3", null, "what I work with"));
+        var dl = el("dl", "panel-stack");
+        [["languages", "JavaScript, TypeScript, Python, Rust, Java, C#, C/C++, X++, SQL"], ["frontend", "React, Next.js, React Native, Tailwind, Vite"], ["backend", "Node.js, Fastify, Axum, Flask, Express"], ["infra", "AWS, Azure, Docker, Linux, Git"]].forEach(function (r) { var d = el("div"); d.appendChild(el("dt", null, r[0])); d.appendChild(el("dd", null, r[1])); dl.appendChild(d); });
+        b.appendChild(dl);
+        b.appendChild(el("h3", null, "find me"));
+        var ul = el("ul", "panel-links");
+        [["https://git.ticusb.com/repos", "git \u2197", true], ["https://linkedin.com/in/ticus", "linkedin \u2197", true], ["mailto:LeviticusB02@gmail.com", "email", false]].forEach(function (l) { var li = el("li"); li.appendChild(link(l[0], l[1], l[2])); ul.appendChild(li); });
+        b.appendChild(ul);
+      });
+    }
+    function projectsPanel() {
+      fillPanel("projects", function (b) {
+        b.appendChild(el("p", "panel-lede", currentName === "space" ? "Every constellation is something I made. Click one." : "Every snow sculpture is something I made. Click one."));
+        var ul = el("ul", "panel-list");
+        PROJECTS.forEach(function (p) {
+          var li = el("li"), btn = el("button", null, p.name); btn.type = "button";
+          btn.appendChild(el("span", "panel-status", p.status));
+          btn.addEventListener("click", function () { openProject(p.slug); });
+          li.appendChild(btn); ul.appendChild(li);
+        });
+        b.appendChild(ul);
+        var more = el("p", "panel-more"); more.appendChild(link("#/projects", "see them all as a list \u2192")); b.appendChild(more);
+      });
+    }
+    function openProject(slug) {
+      var p = PROJECTS.find(function (x) { return x.slug === slug; });
+      if (!p) return;
+      selected = slug;
+      fillPanel(p.name, function (b) {
+        b.appendChild(el("p", "panel-lede", p.summary));
+        b.appendChild(el("p", "panel-meta", [p.status, p.period, p.role].filter(Boolean).join(" \u00b7 ")));
+        var links = el("ul", "panel-links");
+        [["live", "live site"], ["store", "app store"], ["github", "github"]].forEach(function (k) {
+          var href = p.links && p.links[k[0]];
+          if (typeof href === "string" && /^https:\/\//.test(href)) { var li = el("li"); li.appendChild(link(href, k[1] + " \u2197", true)); links.appendChild(li); }
+        });
+        if (links.children.length) b.appendChild(links);
+        if (p.problem) { b.appendChild(el("h3", null, "why")); b.appendChild(el("p", null, p.problem)); }
+        if (p.approach) { b.appendChild(el("h3", null, "how I built it")); b.appendChild(el("p", null, p.approach)); }
+        if (p.outcome && p.outcome.length) { b.appendChild(el("h3", null, "where it's at")); var ol = el("ul", "panel-bullets"); p.outcome.forEach(function (o) { ol.appendChild(el("li", null, o)); }); b.appendChild(ol); }
+        if (p.stack && p.stack.length) b.appendChild(el("p", "panel-meta", p.stack.join(" \u00b7 ")));
+        var more = el("p", "panel-more"); more.appendChild(link("#/work/" + p.slug, "read the whole thing \u2192")); b.appendChild(more);
+      });
+      panelBack.textContent = "\u2190 all projects";
+    }
+    function openSection(key) {
+      if (!state.sections || !state.sections[key]) return false;
+      blendFrom = sectionBlend; sectionAt = performance.now();
+      section = key; selected = null; lastSectionCam = state.sections[key].cam; lastSectionKey = key;
+      navEl.classList.remove("show"); navEl.setAttribute("inert", ""); navShown = false;
+      showTunes(false); hint.classList.remove("show"); replayEl.hidden = true;
+      panelBack.textContent = "\u2190 back home";
+      if (key === "about") aboutPanel(); else projectsPanel();
+      picksEl.hidden = key !== "projects";
+      if (live) live.textContent = key === "about" ? "About." : "Projects. Pick one from the list.";
+      return true;
+    }
+    function closeSection() {
+      blendFrom = sectionBlend; sectionLeftAt = performance.now();
+      section = null; selected = null; panelEl.hidden = true; picksEl.hidden = true; replayEl.hidden = false;
+      navShown = false;
+      var first = navEl.querySelector("a"); if (first) setTimeout(function () { if (alive && first) first.focus({ preventScroll: true }); }, 50);
+    }
+    listen(panelBack, "click", function () { if (selected) { selected = null; projectsPanel(); panelBack.textContent = "\u2190 back home"; } else closeSection(); });
+    listen(byId("worldnav"), "click", function (e) {
+      var a = e.target.closest && e.target.closest("a[data-key]");
+      if (!a) return;
+      var key = a.getAttribute("data-key");
+      if ((key === "about" || key === "projects") && openSection(key)) e.preventDefault();
+    });
+    listen(window, "keydown", function (e) {
+      if (e.key !== "Escape" || !section) return;
+      if (selected) { selected = null; projectsPanel(); panelBack.textContent = "\u2190 back home"; } else closeSection();
+    });
+    // click a sculpture or constellation in the world itself
+    var ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+    listen(dc, "click", function (e) {
+      if (section !== "projects" || !state.picks) return;
+      ndc.set(e.clientX / window.innerWidth * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      var hit = ray.intersectObjects(state.picks.map(function (pk) { return pk.group; }), true)[0];
+      if (!hit) return;
+      for (var o = hit.object; o; o = o.parent) { var pk = state.picks.find(function (x) { return x.group === o; }); if (pk) { openProject(pk.slug); return; } }
+    });
+    function buildPicks() {
+      picksEl.textContent = "";
+      (state.picks || []).forEach(function (pk) {
+        var p = PROJECTS.find(function (x) { return x.slug === pk.slug; });
+        var b = el("button", "pick", p ? p.name : pk.slug); b.type = "button"; b.tabIndex = -1; b.setAttribute("aria-hidden", "true");
+        b.addEventListener("click", function () { openProject(pk.slug); });
+        pk.label = b; picksEl.appendChild(b);
+      });
+    }
+    canDraw = function () { return mode === "home" && !section; };
     var live = byId("live");
     function announce() { if (live) live.textContent = currentName === "space" ? "Beamed up. Links are orbiting you." : "Landed. Penguins have the links."; }
     var mode = "gate", started = false, introAt = 0, homeAt = 0, INTRO_END = 10.5, loadAt = performance.now();
     var gateEl = byId("gate"), navEl = byId("worldnav"), replayEl = byId("replay");
-    function startIntro() {
+    function markSeen() { try { localStorage.setItem("crayonSeen", "1"); } catch (e) { /* private mode */ } }
+    function startIntro(skip) {
       started = true; mode = "intro"; introAt = performance.now(); t0 = introAt;
-      if (reduce) { mode = "home"; homeAt = introAt - 5000; replayEl.hidden = false; }
+      if (reduce || skip === true) { mode = "home"; homeAt = introAt - 5000; t0 = introAt - 20000; replayEl.hidden = false; markSeen(); }
       if (state) state.k = null;
       gateEl.hidden = true; replayEl.hidden = true; navEl.classList.remove("show"); hint.classList.remove("show");
       replayScrawls();
     }
-    listen(byId("start"), "click", startIntro);
+    listen(byId("start"), "click", function () { startIntro(false); });
+    var skipEl = byId("skip");
+    try { skipEl.hidden = !localStorage.getItem("crayonSeen"); } catch (e) { skipEl.hidden = true; }
+    listen(skipEl, "click", function () { startIntro(true); });
     listen(replayEl, "click", function () { loadScene(currentName); });
     // the theme picks the world: light = ski run, dark = space. The button overrides and is remembered.
     var flip = byId("flip");
@@ -1122,7 +1378,7 @@ export function mountCrayonWorld(root) {
       later(function () {
         if (mode !== "intro") return;
         if (state) state.instant = true;
-        mode = "home"; homeAt = performance.now() - 2000; replayEl.hidden = false; announce();
+        mode = "home"; homeAt = performance.now() - 2000; replayEl.hidden = false; announce(); markSeen();
       }, 380);
     }
     var slowFrames = 0, frameCount = 0;
@@ -1143,13 +1399,13 @@ export function mountCrayonWorld(root) {
       if (mode === "intro") {
         var END = current.introEnd || INTRO_END;
         progress = clamp01((T - 4.4) / (END - 4.4));
-        if (T >= END + 0.8) { mode = "home"; homeAt = now; replayEl.hidden = false; announce(); }
+        if (T >= END + 0.8) { mode = "home"; homeAt = now; replayEl.hidden = false; announce(); markSeen(); }
       } else progress = mode === "home" ? 1 : 0;
       var homeBlend = mode === "home" ? (state && state.instant ? 1 : smooth(0, 1, (now - homeAt) / 1600)) : 0;
       root.classList.toggle("home", mode === "home");
-      var navOn = homeBlend > 0.6;
+      var navOn = homeBlend > 0.6 && !section;
       if (navOn !== navShown) { navShown = navOn; navEl.classList.toggle("show", navOn); navEl.toggleAttribute("inert", !navOn); showTunes(navOn); }
-      hint.classList.toggle("show", mode === "home" && now - homeAt > 3500 && bite < 0.2);
+      hint.classList.toggle("show", mode === "home" && !section && now - homeAt > 3500 && bite < 0.2);
       if (ready) scrawls.forEach(function (sc) { sc.el.classList.toggle("on", mode !== "home" && progress >= sc.from && progress < sc.to); });
       shared.uTime.value = reduce ? 0 : now / 1000;
       if (!reduce) shared.uReveal.value = clamp01((now - t0 - DRAW_DELAY) / DRAW_MS);
@@ -1172,7 +1428,7 @@ export function mountCrayonWorld(root) {
       look.pitch += (look.ty * 0.55 - look.pitch) * (reduce ? 1 : 0.06);
       // push the cursor to an edge and a round bite of code opens there: the end of the simulation.
       // hold it at the very edge and the bite keeps growing until the whole thing breaks and redraws.
-      var on = mode === "gate" ? 0 : 1;
+      var on = (mode === "gate" || look.ui || section) ? 0 : 1;
       var pxT = Math.sign(look.tx) * smooth(0.55, 1.0, Math.abs(look.tx)) * on;
       var pyT = -Math.sign(look.ty) * smooth(0.6, 1.0, Math.abs(look.ty)) * on;
       edgePush.x += (pxT - edgePush.x) * (reduce ? 1 : 0.08);
@@ -1206,6 +1462,16 @@ export function mountCrayonWorld(root) {
         var hfov = camera.aspect < 1 ? Math.min(82, hc.fov * (1.25 / camera.aspect)) : hc.fov;
         camera.fov = camera.fov + (hfov - camera.fov) * homeBlend;
       }
+      if (reduce) sectionBlend = section ? 1 : 0;
+      else if (section) sectionBlend = blendFrom + (1 - blendFrom) * clamp01((now - sectionAt) / 1500);
+      else sectionBlend = blendFrom * (1 - clamp01((now - sectionLeftAt) / 1300));
+      if (sectionBlend > 0.001 && lastSectionCam) {
+        var sc = lastSectionCam, se = sectionBlend * sectionBlend * (3 - 2 * sectionBlend);
+        var aspectFix = camera.aspect < 1 ? 1.5 : 1;
+        camera.position.lerp(new THREE.Vector3(sc.pos[0], sc.pos[1], sc.pos[2]).applyMatrix4(world.matrixWorld), se);
+        lookV.lerp(new THREE.Vector3(sc.look[0], sc.look[1], sc.look[2]).applyMatrix4(world.matrixWorld), se);
+        camera.fov = camera.fov + (Math.min(80, sc.fov * aspectFix) - camera.fov) * se;
+      }
       camera.lookAt(lookV);
       shared.uHomeDir.value.copy(lookV).sub(camera.position).normalize();
       var hv = THREE.MathUtils.degToRad(camera.fov / 2);
@@ -1215,9 +1481,19 @@ export function mountCrayonWorld(root) {
       camera.rotateX(-(look.pitch / 0.55) * hv * 0.18);
       camera.updateProjectionMatrix();
 
-      current.update(state, reduce ? 0 : t, { cover: coverCut, T: T, mode: mode, home: homeBlend, homeT: mode === "home" ? (reduce ? 99 : (now - homeAt) / 1000) : 0, burst: reduce ? null : burst, aspect: camera.aspect });
+      current.update(state, reduce ? 0 : t, { cover: coverCut, section: section, selected: selected, sb: sectionBlend, sbKey: lastSectionKey, T: T, mode: mode, home: homeBlend, homeT: mode === "home" ? (reduce ? 99 : (now - homeAt) / 1000) : 0, burst: reduce ? null : burst, aspect: camera.aspect });
       if (!reduce) { fadeDoodles(); drawPowder(); }
       renderer.render(scene, camera);
+      if (section === "projects" && state.picks) {
+        state.picks.forEach(function (pk) {
+          if (!pk.label) return;
+          pk.tip.getWorldPosition(projV); projV.project(camera);
+          pk.label.style.left = ((projV.x + 1) / 2 * window.innerWidth).toFixed(1) + "px";
+          pk.label.style.top = ((1 - projV.y) / 2 * window.innerHeight).toFixed(1) + "px";
+          pk.label.classList.toggle("on", selected === pk.slug);
+          pk.label.style.visibility = projV.z < 1 && sectionBlend > 0.7 ? "visible" : "hidden";
+        });
+      }
       if (state.anchors) {
         state.anchors.forEach(function (n, i) {
           var el = navEl.querySelector('[data-key="' + n.key + '"]');
