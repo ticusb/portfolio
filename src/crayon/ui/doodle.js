@@ -6,6 +6,7 @@ export function createDoodle(byId, listen, hint) {
   var lastPt = null, drawing = false, inkIdx = 0;
   var inks = ["#e8412c", "#2f7de1", "#3aa655", "#ffbf1f", "#f27bb0", "#7a4fc9"];
   function waxDab(x, y, color) {
+    lastInk = performance.now();
     dx.fillStyle = color;
     for (var i = 0; i < 16; i++) {
       var a = Math.random() * Math.PI * 2, rr = Math.random() * 5.5;
@@ -50,7 +51,11 @@ export function createDoodle(byId, listen, hint) {
   listen(window, "pointerdown", function (e) { if (e.pointerType !== "mouse") lastPt = { x: e.clientX, y: e.clientY }; });
   listen(window, "pointerup", function (e) { if (e.pointerType !== "mouse") lastPt = null; });
 
+  // doodles fade slowly; once nothing has been drawn for a while, stop paying for a full-screen fade every frame
+  var lastInk = 0;
   function fadeDoodles() {
+    if (!lastInk) return;
+    if (performance.now() - lastInk > 22000) { dx.save(); dx.setTransform(1, 0, 0, 1, 0, 0); dx.clearRect(0, 0, dc.width, dc.height); dx.restore(); lastInk = 0; return; }
     dx.save();
     dx.setTransform(1, 0, 0, 1, 0, 0);
     dx.globalCompositeOperation = "destination-out";

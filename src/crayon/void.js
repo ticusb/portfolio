@@ -34,7 +34,9 @@ export function buildVoid(kit, w, astro) {
     me: me,
     head: me.head,
     cam: { pos: [VOID_AT.x + 0.9, VOID_AT.y + 0.5, VOID_AT.z + 7.4], look: [VOID_AT.x + 0.9, VOID_AT.y + 0.3, VOID_AT.z], fov: 42 },
-    update: function (t) {
+    update: function (t, on) {
+      grp.visible = !!on;
+      if (!on) return;
       body.position.y = -1.0 + Math.sin(t * 0.6) * 0.22;
       body.rotation.set(Math.sin(t * 0.3) * 0.25, Math.sin(t * 0.2) * 0.55, Math.sin(t * 0.25) * 0.22);
       me.head.rotation.y = Math.sin(t * 0.5) * 0.3;

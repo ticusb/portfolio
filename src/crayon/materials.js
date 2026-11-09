@@ -28,7 +28,7 @@ export function createKit(shared, coarse) {
     var ink = opts.ink ? new THREE.Color(opts.ink) : new THREE.Color(shade).multiplyScalar(0.5);
     var passes = (coarse || (opts.thick || 0.07) < 0.06) ? 1 : 2;
     for (var pass = 0; pass < passes; pass++) {
-      g.add(new THREE.Mesh(geom, new THREE.ShaderMaterial({
+      var line = new THREE.Mesh(geom, new THREE.ShaderMaterial({
         vertexShader: lineVert, fragmentShader: lineFrag, side: THREE.BackSide,
         uniforms: {
           uInk: { value: ink }, uTime: shared.uTime, uDpr: shared.uDpr, uRes: shared.uRes, uReveal: shared.uReveal, uCursor: shared.uCursor,
@@ -36,7 +36,9 @@ export function createKit(shared, coarse) {
           uLump: { value: lump }, uThick: { value: (opts.thick || 0.07) * (pass ? 0.7 : 1) },
           uShift: { value: new THREE.Vector2(jitter(4), jitter(4)) }
         }
-      })));
+      }));
+      if (pass) line.userData.pass2 = true;
+      g.add(line);
     }
     return g;
   }
@@ -48,17 +50,20 @@ export function createKit(shared, coarse) {
     parent.add(obj); return obj;
   }
 
-  var sphere = new THREE.SphereGeometry(1, 40, 28);
-  var sphereLo = new THREE.SphereGeometry(1, 14, 10);
-  var halfSphere = new THREE.SphereGeometry(1, 40, 16, 0, Math.PI * 2, 0, Math.PI / 2);
-  var cone = new THREE.ConeGeometry(1, 1, 40, 6);
-  var cyl = new THREE.CylinderGeometry(1, 1, 1, 24, 6);
-  var torus = new THREE.TorusGeometry(1, 0.22, 12, 32);
-  var thinTorus = new THREE.TorusGeometry(1, 0.1, 10, 48);
-  var plane = new THREE.PlaneGeometry(1, 1, 30, 20);
+  // tessellation: the lumps and wobbly outlines hide facets, so this stays modest (and lower on phones,
+  // where every vertex runs the crayon noise up to three times: the fill and two outline shells)
+  var D = coarse ? { u: 20, v: 14 } : { u: 28, v: 20 };
+  var sphere = new THREE.SphereGeometry(1, D.u, D.v);
+  var sphereLo = new THREE.SphereGeometry(1, 12, 8);
+  var halfSphere = new THREE.SphereGeometry(1, D.u, Math.round(D.v * 0.55), 0, Math.PI * 2, 0, Math.PI / 2);
+  var cone = new THREE.ConeGeometry(1, 1, D.u, coarse ? 3 : 4);
+  var cyl = new THREE.CylinderGeometry(1, 1, 1, coarse ? 12 : 16, coarse ? 2 : 4);
+  var torus = new THREE.TorusGeometry(1, 0.22, coarse ? 8 : 10, coarse ? 18 : 24);
+  var thinTorus = new THREE.TorusGeometry(1, 0.1, 8, coarse ? 28 : 36);
+  var plane = new THREE.PlaneGeometry(1, 1, 24, 16);
   // a sphere pushed toward a cube: boxy but with smooth normals, so the lumps and outlines don't crack
   var box = (function () {
-    var g = new THREE.SphereGeometry(1, 40, 28);
+    var g = new THREE.SphereGeometry(1, D.u, D.v);
     var pos = g.attributes.position, v = new THREE.Vector3();
     for (var i = 0; i < pos.count; i++) {
       v.fromBufferAttribute(pos, i);

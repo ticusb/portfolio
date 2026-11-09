@@ -456,6 +456,7 @@ export function createSki(kit) {
       }
       s.gear.forEach(function (gm) { gm.visible = home < 0.5; });
       s.planted.scale.setScalar(Math.max(0.001, home));
+      s.planted.visible = home > 0.001; // scaled-to-nothing things still cost draw calls; hide them outright
       // penguins waddle in from the sides once I'm posted
       s.penguins.forEach(function (pg, i) {
         var a = t * 0.5 * pg.dir + pg.phase;
@@ -474,12 +475,14 @@ export function createSki(kit) {
         pg.group.rotation.set(1.4 * (1 - show), -side * (Math.PI / 2) * (1 - show) + waddleYaw * show, Math.sin(t * 7 + i) * 0.14 * show);
         pg.fl.rotation.z = 0.35 + Math.sin(t * 9 + i) * 0.4;
         pg.fr.rotation.z = Math.sin(t * 3 + i) * 0.12;
-        pg.group.scale.setScalar(u > 0 ? 0.9 : 0.001);
+        pg.group.scale.setScalar(0.9);
+        pg.group.visible = u > 0;
       });
       if (dir.lengthSq() > 1e-6) { s.trail.unshift(p.clone()); if (s.trail.length > 24) s.trail.pop(); }
       s.spray.forEach(function (sb, i) {
         var q = s.trail[Math.min(s.trail.length - 1, i * 2)];
-        if (!q || air > 0.2 || s.trail.length < 3 || home > 0) { sb.position.y = -50; return; }
+        sb.visible = !(!q || air > 0.2 || s.trail.length < 3 || home > 0);
+        if (!sb.visible) return;
         sb.position.set(q.x + Math.sin(i * 7.1 + t * 9) * 0.35, q.y + 0.1 + (i % 3) * 0.14, q.z + Math.cos(i * 3.3 + t * 7) * 0.35);
         sb.scale.setScalar(0.09 + (12 - i) * 0.014);
       });
@@ -509,6 +512,7 @@ export function createSki(kit) {
       // the summit me shows up for about; the picked sculpture does a little hop
       s.chillShow = info.sbKey === "about" ? (info.sb || 0) : 0;
       s.chill.scale.setScalar(Math.max(0.001, s.chillShow) * 1.1);
+      s.chill.visible = s.chillShow > 0.001;
       s.chillHead.rotation.y = Math.sin(t * 0.6) * 0.25;
       s.picks.forEach(function (pk) {
         var on = info.selected === pk.slug;
@@ -520,7 +524,7 @@ export function createSki(kit) {
       s.clouds[0].position.x = -14 + Math.sin(t * 0.15) * 1.2;
       s.clouds[1].position.x = 9 + Math.sin(t * 0.12 + 2) * 1.0;
       s.focus.copy(p);
-      s.void.update(t);
+      s.void.update(t, info.sbKey === "monologue" && info.sb > 0);
     },
     beats: BEATS,
     drawMs: 2400, drawDelay: 150, revealFrom: 0.17,

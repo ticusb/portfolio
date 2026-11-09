@@ -145,6 +145,7 @@ export function createSpace(kit) {
         n.obj.position.set(2 + Math.cos(a) * 5.4 * sx, 0.9 + Math.sin(a) * 2.0 + Math.sin(t * 0.9 + i) * 0.2, -3 + Math.sin(a) * 2.6);
         n.obj.rotation.y = t * 0.6 + i;
         n.obj.scale.setScalar(Math.max(0.001, home));
+        n.obj.visible = home > 0.001;
         n.obj.userData.vis = home;
       });
       s.planet.rotation.y = t * 0.15;
@@ -153,7 +154,7 @@ export function createSpace(kit) {
       s.shoot.position.set(14 - st * 32, 8 - st * 6, -14);
       s.stars.forEach(function (sr, i) { if (i % 5 === 0) sr.visible = Math.sin(t * 2 + i) > -0.6; });
       s.focus.set(me.group.position.x, me.group.position.y + 1.0, -3);
-      s.void.update(t);
+      s.void.update(t, info.sbKey === "monologue" && info.sb > 0);
       // constellations: a soft twinkle; the one you picked lights up
       s.picks.forEach(function (pk, i) {
         var on = info.selected === pk.slug, inProjects = info.section === "projects";

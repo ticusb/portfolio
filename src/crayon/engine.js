@@ -71,7 +71,8 @@ export function mountCrayonWorld(root, opts) {
   var wobble = byId("wobble");
   if (!reduce && wobble) {
     var seeds = [2, 6, 11], si = 0;
-    wobbleTimer = setInterval(function () { si = (si + 1) % seeds.length; wobble.setAttribute("seed", String(seeds[si])); }, 240);
+    // only while the gate is up: every change re-filters everything drawn with it
+    wobbleTimer = setInterval(function () { if (byId("gate").hidden) return; si = (si + 1) % seeds.length; wobble.setAttribute("seed", String(seeds[si])); }, 240);
   }
 
   /* intro progress + the scrawled taglines */
@@ -144,6 +145,9 @@ export function mountCrayonWorld(root, opts) {
       introLen = acc;
     }
     if (DAILIES.on) {
+      // perf probe for tools/dailies/perf.mjs: what the last frame cost the GPU
+      window.__gl = function () { var r = renderer.info.render; return { calls: r.calls, triangles: r.triangles, dpr: dpr, programs: renderer.info.programs ? renderer.info.programs.length : 0, geometries: renderer.info.memory.geometries }; };
+      cleanups.push(function () { delete window.__gl; });
       window.__beats = function () { return beatTable ? beatTable.map(function (b) { return { name: b.name, at: introAt / 1000 + b.start }; }) : []; };
       cleanups.push(function () { delete window.__beats; });
     }
@@ -173,6 +177,7 @@ export function mountCrayonWorld(root, opts) {
       while (world.children.length) world.remove(world.children[0]);
       current = SCENES[name];
       state = current.build(world);
+      if (thinLines) thinOutlines();
       buildBeats();
       t0 = started ? performance.now() : Infinity;
       shared.uReveal.value = reduce ? 1 : 0;
@@ -386,20 +391,26 @@ export function mountCrayonWorld(root, opts) {
         mode = "home"; homeAt = performance.now() - 2000; replayEl.hidden = false; announce(); markSeen();
       }, 380);
     }
-    var slowFrames = 0, frameCount = 0;
-    function adapt(dtMs) {
+    // the quality ladder: watch the average frame time; if this device can't hold ~45fps, step down. First
+    // resolution (to 1x, then 0.75x on phones), then the second outline pass. It never steps back up,
+    // so it can't flicker between settings.
+    var frameCount = 0, ema = 16, lastStep = 0, thinLines = false;
+    var DPR_FLOOR = coarse ? 0.75 : 1;
+    function thinOutlines() { world.traverse(function (o) { if (o.userData.pass2) o.visible = false; }); }
+    function adapt(dtMs, now) {
       frameCount++;
-      if (frameCount < 90) return;
-      slowFrames = dtMs > 26 ? slowFrames + 1 : Math.max(0, slowFrames - 1);
-      if (slowFrames > 45 && dpr > 1) {
-        dpr = Math.max(1, dpr - 0.25); renderer.setPixelRatio(dpr); shared.uDpr.value = dpr; resize(); slowFrames = 0;
-      }
+      if (dtMs > 90) return; // a hiccup (tab switch, GC), not the steady cost
+      ema += (dtMs - ema) * 0.05;
+      if (frameCount < 60 || ema < 22 || now - lastStep < 1500) return;
+      lastStep = now; ema = 16;
+      if (dpr > DPR_FLOOR) { dpr = Math.max(DPR_FLOOR, dpr - 0.25); renderer.setPixelRatio(dpr); shared.uDpr.value = dpr; resize(); }
+      else if (!thinLines) { thinLines = true; thinOutlines(); }
     }
     function frame() {
       var now = performance.now();
       var t = (now - loadAt) / 1000;
       var dtMs = Math.min(100, now - lastNow); lastNow = now;
-      if (!document.hidden) adapt(dtMs);
+      if (!document.hidden) adapt(dtMs, now);
       var T = mode === "gate" ? 0 : (now - introAt) / 1000;
       if (mode === "intro") {
         var END = beatTable ? introLen : current.introEnd || INTRO_END;

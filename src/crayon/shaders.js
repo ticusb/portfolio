@@ -164,3 +164,64 @@ export const faceFrag = [
   "  gl_FragColor = vec4(col, 1.0);",
   "}"
 ].join("\n");
+
+/*
+ * Baked variants: many static crayon meshes merged into one draw call. Everything that was a per-object
+ * uniform arrives as a per-vertex attribute instead, and the geometry is pre-transformed into the baked
+ * group's space, so the result draws exactly like the separate meshes did:
+ *   aObj      the vertex in its original object space (the noise and the reveal sweep are seeded from it)
+ *   aNrmM     the object-space normal pushed through the object's matrix (lumps and overdraw follow it)
+ *   aNrmW     the true normal in group space, for the shading
+ *   aNrmLine  (outlines) the outline offset direction, thickness and scale correction folded in
+ *   aP        seed, lump, over, angle;  aDelay: draw order;  aShift: misregistration in px
+ */
+var BAKED_HEAD = [
+  COMMON,
+  "uniform float uTime; uniform vec2 uRes;",
+  "attribute vec3 aObj; attribute vec3 aNrmM; attribute vec4 aP; attribute float aDelay; attribute vec2 aShift;",
+  "float bakedLump(){ float boil = floor(uTime*6.0); float l = n3(aObj*1.3 + aP.x) - 0.5; float b = n3(aObj*2.6 + aP.x + boil*0.71) - 0.5; return l*aP.y + b*aP.y*0.05; }",
+  "vec4 bakedClip(vec3 p){ vec4 clip = projectionMatrix * modelViewMatrix * vec4(p, 1.0); clip.xy += aShift / uRes * 2.0 * clip.w; return clip; }"
+].join("\n");
+
+export const bakedFillVert = [
+  BAKED_HEAD,
+  "attribute vec3 aNrmW; attribute vec3 aColor; attribute vec3 aShade;",
+  "varying vec3 vN; varying vec3 vObj; varying vec3 vWorld; varying vec3 vColor; varying vec3 vShade; varying float vSeed; varying float vAngle; varying float vDelay;",
+  "void main(){",
+  "  vN = normalize(normalMatrix * aNrmW); vObj = aObj;",
+  "  vColor = aColor; vShade = aShade; vSeed = aP.x; vAngle = aP.w; vDelay = aDelay;",
+  "  vec3 p = position + aNrmM * bakedLump();",
+  "  p += aNrmM * aP.z * (n3(aObj*2.1 + aP.x*1.7) - 0.25);",
+  "  vWorld = (modelMatrix * vec4(p, 1.0)).xyz;",
+  "  gl_Position = bakedClip(p);",
+  "}"
+].join("\n");
+
+// the fill/line fragment shaders with their per-object uniforms swapped for varyings
+function bakeFrag(src, swaps, consts) {
+  var names = Object.keys(swaps).concat(Object.keys(consts));
+  var out = src.replace(new RegExp("uniform (?:float|vec2|vec3|vec4) (" + names.join("|") + ");\\s?", "g"), "");
+  var head = Object.keys(swaps).map(function (n) { return "varying " + swaps[n][0] + " " + swaps[n][1] + ";\n#define " + n + " " + swaps[n][1]; })
+    .concat(Object.keys(consts).map(function (n) { return "#define " + n + " " + consts[n]; })).join("\n");
+  return head + "\n" + out;
+}
+export const bakedFillFrag = bakeFrag(fillFrag,
+  { uColor: ["vec3", "vColor"], uShade: ["vec3", "vShade"], uSeed: ["float", "vSeed"], uAngle: ["float", "vAngle"], uDelay: ["float", "vDelay"] },
+  { uWash: "0.0", uAlpha: "1.0", uCut: "vec3(1.0, 1.0, 0.0)" });
+
+export const bakedLineVert = [
+  BAKED_HEAD,
+  "attribute vec3 aNrmLine; attribute vec3 aInk;",
+  "varying float vAng; varying vec3 vWorld; varying vec3 vInk; varying float vSeed; varying float vDelay;",
+  "void main(){",
+  "  float boil = floor(uTime*6.0);",
+  "  vInk = aInk; vSeed = aP.x; vDelay = aDelay;",
+  "  vAng = atan(aObj.y, aObj.x) / 6.2832 + 0.5;",
+  "  float t = 0.45 + 1.1*n3(aObj*1.9 + aP.x + boil*0.06);",
+  "  vec3 p = position + aNrmM * bakedLump() + aNrmLine * t;",
+  "  vWorld = (modelMatrix * vec4(p, 1.0)).xyz;",
+  "  gl_Position = bakedClip(p);",
+  "}"
+].join("\n");
+export const bakedLineFrag = bakeFrag(lineFrag,
+  { uInk: ["vec3", "vInk"], uSeed: ["float", "vSeed"], uDelay: ["float", "vDelay"] }, {});
