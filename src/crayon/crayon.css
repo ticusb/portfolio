@@ -170,7 +170,7 @@ html.crayon-lock, html.crayon-lock body { overflow: hidden; height: 100%; }
 .crayon-root .pick:hover, .crayon-root .pick.on { background: var(--yellow); }
 @media (max-width: 700px) {
   /* a bottom sheet, so the world keeps the top half (the camera tilts to put it there) */
-  .crayon-root .panel { left: 12px; right: 12px; top: auto; bottom: 12px; width: auto; max-height: 46vh; overscroll-behavior: contain; }
+  .crayon-root .panel { left: 12px; right: 12px; top: auto; bottom: max(12px, env(safe-area-inset-bottom, 0px)); width: auto; max-height: 46vh; overscroll-behavior: contain; }
   .crayon-root .pick { font-size: 13px; padding: 3px 7px; }
   .crayon-root .worldnav a { font-size: 16px; padding: 6px 10px; }
   /* small screens make the paper grain proportionally louder */
@@ -201,6 +201,12 @@ html.crayon-lock, html.crayon-lock body { overflow: hidden; height: 100%; }
 .crayon-root.in-void #doodle { touch-action: none; }
 /* the gate: you can drag me around, so a swipe there isn't a scroll */
 .crayon-root .gate { touch-action: none; }
+/* touch: the small labels keep their look but get a 44px tall finger target (an invisible halo around them) */
+@media (pointer: coarse) {
+  .crayon-root .pick::after { content: ""; position: absolute; inset: -9px -6px; }
+  .crayon-root .rec-toggle { position: relative; }
+  .crayon-root .rec-toggle::after { content: ""; position: absolute; inset: -4px 0; }
+}
 /* the world toggle is an icon button */
 .crayon-root #flip { display: grid; place-items: center; min-width: 52px; min-height: 52px; padding: 6px; }
 
