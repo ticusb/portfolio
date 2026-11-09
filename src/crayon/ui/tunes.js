@@ -62,9 +62,17 @@ export function createTunes(byId, listen, isAlive, onCleanup) {
     searchTimer = setTimeout(function () {
       var seq = ++searchSeq;
       fetch("/api/search-songs?q=" + encodeURIComponent(q))
-        .then(function (r) { return r.json(); })
+        .then(function (r) {
+          // a 429 or an outage isn't "no matches"
+          if (r.ok) return r.json();
+          throw new Error(r.status === 429 ? "busy" : "down");
+        })
         .then(function (d) { if (isAlive() && seq === searchSeq) renderResults((d && Array.isArray(d.tracks)) ? d.tracks : []); })
-        .catch(function () { if (isAlive()) recStatus.textContent = "search is down right now"; });
+        .catch(function (err) {
+          if (!isAlive() || seq !== searchSeq) return;
+          closeResults();
+          recStatus.textContent = err && err.message === "busy" ? "that's a lot of searching. try again in a minute." : "search is down right now";
+        });
     }, 350);
   });
   listen(recQ, "keydown", function (e) { if (e.key === "Escape") { if (!recList.hidden) closeResults(); else { setRecOpen(false); recToggle.focus(); } } });
