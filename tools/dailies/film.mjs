@@ -4,6 +4,7 @@
 //
 //   node tools/dailies/film.mjs --name ski-intro --world ski --dur 17 \
 //     --act "0.3:click #start" [--url http://localhost:3000/] [--size 1280x800] [--phone] [--from 4] [--every 1] [--png]
+//     [--reduce]   (emulates prefers-reduced-motion: reduce)
 //
 // Actions are "<seconds>:<kind> <arg>": click <selector> | key <Key> | mouse <x> <y> | tap <x> <y> | js <code>
 // | down <x> <y> | move <x> <y> | up <x> <y> (a held-button drag) | touchdown / touchmove / touchup <x> <y>.
@@ -19,7 +20,7 @@ const args = process.argv.slice(2);
 const opt = { url: "http://localhost:3000/", world: "ski", dur: 10, size: "1280x800", from: 0, every: 1, act: [], name: "film", seen: false };
 for (let i = 0; i < args.length; i++) {
   const k = args[i].replace(/^--/, "");
-  if (k === "phone" || k === "seen" || k === "png") { opt[k] = true; continue; }
+  if (k === "phone" || k === "seen" || k === "png" || k === "reduce") { opt[k] = true; continue; }
   const v = args[++i];
   if (k === "act") opt.act.push(v); else opt[k] = v;
 }
@@ -54,6 +55,7 @@ const renderer = await evaluate("(()=>{const g=document.createElement('canvas').
 console.log("GPU:", renderer);
 await send("Emulation.setDeviceMetricsOverride", opt.phone ? { width: 390, height: 844, deviceScaleFactor: 2, mobile: true } : { width: W, height: H, deviceScaleFactor: 1, mobile: false });
 if (opt.phone) await send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
+if (opt.reduce) await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
 const pre = `try{localStorage.clear();localStorage.setItem('world',${JSON.stringify(opt.world)});${opt.seen ? "localStorage.setItem('crayonSeen','1');" : ""}}catch(e){}\n`;
 await send("Page.addScriptToEvaluateOnNewDocument", { source: pre + readFileSync(path.join(here, "clock.js"), "utf8") });
 const loaded = once("Page.loadEventFired");
