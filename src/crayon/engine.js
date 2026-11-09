@@ -177,9 +177,18 @@ export function mountCrayonWorld(root, opts) {
       }
       return pose;
     }
+    // free what a build made on the GPU. Every build makes fresh baked meshes and ribbons, so a replay or a world
+    // switch would otherwise leave the old ones behind. The kit's shared shapes stay until unmount.
+    var sharedGeo = Object.keys(kit.geo).map(function (k) { return kit.geo[k]; });
+    function disposeWorld() {
+      world.traverse(function (o) {
+        if (o.material && o.material.dispose) o.material.dispose();
+        if (o.geometry && o.geometry.dispose && sharedGeo.indexOf(o.geometry) < 0) o.geometry.dispose();
+      });
+    }
     function loadScene(name, straightHome) {
       if (!SCENES[name]) name = "space";
-      world.traverse(function (o) { if (o.material && o.material.dispose) o.material.dispose(); });
+      disposeWorld();
       while (world.children.length) world.remove(world.children[0]);
       current = SCENES[name];
       state = current.build(world);
@@ -657,7 +666,7 @@ export function mountCrayonWorld(root, opts) {
       if (alive) rafId = requestAnimationFrame(frame);
     }
     rafId = requestAnimationFrame(frame);
-    cleanups.push(function () { cancelAnimationFrame(rafId); world.traverse(function (o) { if (o.material && o.material.dispose) o.material.dispose(); if (o.geometry && o.geometry.dispose) o.geometry.dispose(); }); faceTex.dispose(); renderer.dispose(); });
+    cleanups.push(function () { cancelAnimationFrame(rafId); disposeWorld(); sharedGeo.forEach(function (g) { g.dispose(); }); faceTex.dispose(); renderer.dispose(); });
   }
 
   cleanups.push(function () { clearInterval(wobbleTimer); });
