@@ -16,8 +16,7 @@ export function createDoodle(byId, listen, hint) {
     dx.globalAlpha = 1;
   }
   var canDraw = function () { return false; };
-  // at home a drag draws, mouse or finger, same as on the web (with no tilt, a finger drag only looks around in
-  // the sections, where there's nothing to draw on)
+  // at home a drag draws, mouse or finger, same as on the web (and the view follows the finger, see aimAt)
   var drawId = null;
   listen(dc, "pointerdown", function (e) {
     if (!canDraw()) return;
@@ -38,23 +37,20 @@ export function createDoodle(byId, listen, hint) {
   }
   sizeDoodle();
   listen(window, "resize", sizeDoodle);
-  // the camera looks where the mouse is (or where the phone is tilted); look too far and the simulation breaks
+  // the camera looks where the mouse is, or where your finger is while it's down (so drawing near an edge opens the
+  // sim there, same as with a mouse); otherwise where the phone is tilted. Look too far and the simulation breaks
   var look = { yaw: 0, pitch: 0, tx: 0, ty: 0 };
-  listen(window, "pointermove", function (e) {
-    if (e.pointerType === "mouse") {
-      look.ui = !!(e.target && e.target.closest && e.target.closest(".tunes, .panel, .picker, .worldnav a, .replay, .pick, .gate"));
-      look.tx = (e.clientX / window.innerWidth - 0.5) * 2;
-      look.ty = (e.clientY / window.innerHeight - 0.5) * 2;
-      if (Math.abs(look.tx) > 0.2) hint.style.opacity = "0";
-    } else if (touch && !tilt && !drawing) {
-      // touch, no tilt, not drawing: dragging pans your view; drag far enough toward an edge and the sim shows there
-      look.tx = Math.max(-1, Math.min(1, (e.clientX - touch.x) / (window.innerWidth * 0.45)));
-      look.ty = Math.max(-1, Math.min(1, (e.clientY - touch.y) / (window.innerHeight * 0.45)));
-    }
-  });
+  function aimAt(e) {
+    look.ui = !!(e.target && e.target.closest && e.target.closest(".tunes, .panel, .picker, .worldnav a, .replay, .pick, .gate"));
+    look.tx = (e.clientX / window.innerWidth - 0.5) * 2;
+    look.ty = (e.clientY / window.innerHeight - 0.5) * 2;
+    if (Math.abs(look.tx) > 0.2) hint.style.opacity = "0";
+  }
+  listen(window, "pointermove", function (e) { if (e.pointerType === "mouse" || touch) aimAt(e); });
   var touch = null;
-  listen(window, "pointerdown", function (e) { if (e.pointerType !== "mouse") touch = { x: e.clientX, y: e.clientY }; });
-  function lift(e) { if (e.pointerType === "mouse") return; touch = null; if (!tilt) { look.tx = 0; look.ty = 0; } } // let go: it eases back
+  listen(window, "pointerdown", function (e) { if (e.pointerType !== "mouse") { touch = true; aimAt(e); } });
+  // let go: no hover on a touch screen, so the view eases back to the middle (or to wherever the tilt says)
+  function lift(e) { if (e.pointerType === "mouse") return; touch = null; look.ui = false; if (!tilt) { look.tx = 0; look.ty = 0; } }
   listen(window, "pointerup", lift); listen(window, "pointercancel", lift);
 
   // tilt: on a phone, tipping it toward an edge is "looking" there. The neutral position slowly follows however
@@ -68,6 +64,7 @@ export function createDoodle(byId, listen, hint) {
     if (ang === 90) { x = e.beta; y = -e.gamma; } else if (ang === -90 || ang === 270) { x = -e.beta; y = e.gamma; }
     if (!tilt) tilt = { x0: x, y0: y };
     tilt.x0 += (x - tilt.x0) * 0.004; tilt.y0 += (y - tilt.y0) * 0.004;
+    if (touch) return; // a finger on the screen steers until it lifts
     look.tx = Math.max(-1, Math.min(1, (x - tilt.x0) / 22));
     look.ty = Math.max(-1, Math.min(1, (y - tilt.y0) / 22));
   }
