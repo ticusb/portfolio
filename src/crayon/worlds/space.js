@@ -72,6 +72,12 @@ export function createSpace(kit) {
       kit.bake(sh); s.shoot = put(sh, w, [14, 8, -14]);
       s.focus = new THREE.Vector3(2, 0.8, -3);
       s.homeCam = { pos: [2, 1.8, 11.5], look: [2, 1.9, -3], fov: 42 };
+      // switching worlds after the intro: leave by diving into the Earth, arrive by pulling out of it to the beam
+      var E = [-6, -5.5, -7];
+      s.travel = {
+        leave: function () { return { pos: [E[0] + 0.1, E[1] + 0.1, E[2] + 2.2], look: E, fov: 28 }; },
+        arrive: function () { return { pos: [E[0] + 0.7, E[1] + 1.0, E[2] + 3.6], look: E, fov: 40 }; }
+      };
       // projects: a patch of sky with one constellation per project
       var SHAPES = [
         { pts: [[0, 1.2], [0.8, 0.3], [0, -1], [-0.8, 0.3]], edges: [[0, 1], [1, 2], [2, 3], [3, 0], [0, 2]] },

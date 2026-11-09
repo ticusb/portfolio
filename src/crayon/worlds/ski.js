@@ -342,6 +342,11 @@ export function createSki(kit) {
 
       s.focus = new THREE.Vector3();
       s.homeCam = { pos: [s.S.x + 0.3, GROUND + 2.6, s.S.z + 8.2], look: [s.S.x - 0.2, GROUND + 1.6, s.S.z - 3], fov: 48 };
+      // switching worlds after the intro: leave by lifting off into the sky, arrive by dropping out of it onto the slope
+      s.travel = {
+        leave: function () { return { pos: [s.S.x + 2, GROUND + 70, s.S.z + 34], look: [s.S.x - 2, GROUND, s.S.z - 8], fov: 58 }; },
+        arrive: function () { return { pos: [s.S.x + 1, GROUND + 46, s.S.z + 30], look: [s.S.x - 0.2, GROUND + 1.6, s.S.z - 3], fov: 56 }; }
+      };
       // about: me, chilling on a snow ledge at the summit
       var M = s.main, top = GROUND + M.H;
       st(put(crayon(sphere, "#f4f8ff", "#9db8e8", { thick: 0.06, lump: 0.12, ink: INK, order: 4 }), w, [M.x + 0.15, top - 0.78, M.z + 0.45], [0.8, 0.24, 0.7]));

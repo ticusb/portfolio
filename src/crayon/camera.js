@@ -71,6 +71,13 @@ export function createRig(camera, world, shared) {
       lookV.lerp(new THREE.Vector3(sc.look[0], sc.look[1], sc.look[2]).applyMatrix4(world.matrixWorld), se);
       camera.fov = camera.fov + (Math.min(80, sc.fov * aspectFix) - camera.fov) * se;
     }
+    // a travel shot on top of everything else (switching worlds): pull toward travel.pose by travel.w
+    if (travel && travel.w > 0.0001) {
+      var tp = travel.pose, tw = travel.w;
+      camera.position.lerp(new THREE.Vector3(tp.pos[0], tp.pos[1], tp.pos[2]).applyMatrix4(world.matrixWorld), tw);
+      lookV.lerp(new THREE.Vector3(tp.look[0], tp.look[1], tp.look[2]).applyMatrix4(world.matrixWorld), tw);
+      camera.fov += (tp.fov - camera.fov) * tw;
+    }
     camera.lookAt(lookV);
     var hv = THREE.MathUtils.degToRad(camera.fov / 2);
     shared.uHalfFov.value.set(Math.atan(Math.tan(hv) * camera.aspect), hv);
@@ -81,5 +88,8 @@ export function createRig(camera, world, shared) {
     if (camera.aspect < 1 && sectionBlend > 0.001) camera.rotateX(-hv * 0.3 * sectionBlend * sectionBlend * (3 - 2 * sectionBlend));
     camera.updateProjectionMatrix();
   }
-  return { base: base, aim: aim, still: still, pose: pose };
+  var travel = null;
+  // travel: { pose: { pos, look, fov } in world space-of-the-scene, w: 0..1 } or null
+  function setTravel(t) { travel = t; }
+  return { base: base, aim: aim, still: still, pose: pose, setTravel: setTravel };
 }

@@ -177,7 +177,7 @@ export function mountCrayonWorld(root, opts) {
       }
       return pose;
     }
-    function loadScene(name) {
+    function loadScene(name, straightHome) {
       if (!SCENES[name]) name = "space";
       world.traverse(function (o) { if (o.material && o.material.dispose) o.material.dispose(); });
       while (world.children.length) world.remove(world.children[0]);
@@ -213,7 +213,8 @@ export function mountCrayonWorld(root, opts) {
       section = null; selected = null; sectionBlend = 0; panelEl.hidden = true; picksEl.hidden = true;
       if (inVoid) { inVoid = false; outOfVoid(); }
       buildPicks();
-      if (started) startIntro(false); else { mode = "gate"; replayScrawls(); }
+      if (straightHome) { startIntro(true); homeAt = performance.now() - 5000; announce(); }
+      else if (started) startIntro(false); else { mode = "gate"; replayScrawls(); }
     }
     var navShown = false;
     // sections: about and projects open inside the world instead of leaving the page
@@ -445,8 +446,41 @@ export function mountCrayonWorld(root, opts) {
     }
     function go(name, remember) {
       if (remember) { try { localStorage.setItem("world", name); } catch (e) {} }
+      if (started && currentName && name !== currentName) { travelTo(name); return; }
       currentName = name;
       loadScene(name);
+    }
+    // once the intro has run, switching worlds doesn't replay it: the camera travels out of this world (up into
+    // the sky, or down into the Earth), a crayon blot in the next world's colour closes over the cut, and the
+    // camera arrives at the other world's home from where the story says it should (out of the Earth, or down
+    // from the sky). Reduced motion: straight there.
+    var traveling = false;
+    function easeInOut(x) { return x * x * (3 - 2 * x); }
+    function travelTo(name) {
+      if (traveling) return;
+      if (section) { section = null; selected = null; panelEl.hidden = true; picksEl.hidden = true; sectionBlend = 0; blendFrom = 0; }
+      if (inVoid) { inVoid = false; outOfVoid(); }
+      if (reduce || !state.travel) { currentName = name; loadScene(name, true); return; }
+      traveling = true; flip.disabled = true;
+      var leave = { pose: state.travel.leave(), w: 0 }, from = performance.now();
+      rig.setTravel(leave);
+      var tick = setInterval(function () { leave.w = easeInOut(clamp01((performance.now() - from) / 1100)) * 0.97; }, 16);
+      cleanups.push(function () { clearInterval(tick); });
+      later(function () {
+        wipeEl.style.setProperty("--x", "50%"); wipeEl.style.setProperty("--y", "50%");
+        wipeEl.style.setProperty("--wipe", name === "space" ? "#1d2156" : "#d6ebff");
+        wipeEl.classList.remove("out"); wipeEl.classList.add("in");
+      }, 820);
+      later(function () {
+        clearInterval(tick);
+        currentName = name;
+        loadScene(name, true);
+        var arrive = { pose: state.travel ? state.travel.arrive() : null, w: 1 }, at = performance.now();
+        rig.setTravel(arrive.pose ? arrive : null);
+        var tick2 = setInterval(function () { arrive.w = 1 - easeInOut(clamp01((performance.now() - at) / 1900)); if (arrive.w <= 0) { clearInterval(tick2); rig.setTravel(null); traveling = false; flip.disabled = false; } }, 16);
+        cleanups.push(function () { clearInterval(tick2); });
+        later(function () { wipeEl.classList.add("out"); later(function () { wipeEl.classList.remove("in", "out"); wipeEl.style.removeProperty("--wipe"); }, 500); }, 120);
+      }, 1240);
     }
     listen(flip, "click", function () { go(currentName === "space" ? "ski" : "space", true); });
     function followTheme() {
@@ -524,7 +558,7 @@ export function mountCrayonWorld(root, opts) {
       root.classList.toggle("home", mode === "home");
       root.classList.toggle("sim", mode === "gate");
       shared.uSim.value = mode === "gate" ? 1 : simFrom ? 1 - smooth(0, 1, (now - simFrom - 250) / 1100) : 0;
-      var navOn = homeBlend > 0.6 && !section;
+      var navOn = homeBlend > 0.6 && !section && !traveling;
       if (navOn !== navShown) { navShown = navOn; navEl.classList.toggle("show", navOn); navEl.toggleAttribute("inert", !navOn); showTunes(navOn); }
       hint.classList.toggle("show", mode === "home" && !section && now - homeAt > 3500 && bite < 0.2);
       if (ready) scrawls.forEach(function (sc) {

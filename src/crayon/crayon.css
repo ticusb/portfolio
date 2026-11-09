@@ -179,7 +179,7 @@ html.crayon-lock, html.crayon-lock body { overflow: hidden; height: 100%; }
 }
 
 /* monologue: an ink blot opens out of my face and covers the screen; the void is behind it */
-.crayon-root .void-wipe { position: fixed; inset: 0; z-index: 3; pointer-events: none; visibility: hidden; background: #1b1530; clip-path: circle(0 at var(--x, 50%) var(--y, 50%)); filter: url(#crayon); }
+.crayon-root .void-wipe { position: fixed; inset: 0; z-index: 3; pointer-events: none; visibility: hidden; background: var(--wipe, #1b1530); clip-path: circle(0 at var(--x, 50%) var(--y, 50%)); filter: url(#crayon); }
 .crayon-root .void-wipe.in { visibility: visible; clip-path: circle(150% at var(--x, 50%) var(--y, 50%)); transition: clip-path 0.36s cubic-bezier(.6,0,.4,1); }
 .crayon-root .void-wipe.in.out { opacity: 0; transition: opacity 0.45s ease; }
 .crayon-root .panel-thoughts { list-style: none; margin: 8px 0 12px; padding: 0; display: flex; flex-direction: column; gap: 14px; }
