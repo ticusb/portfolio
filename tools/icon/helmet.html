@@ -1,0 +1,49 @@
+<!doctype html><meta charset="utf-8">
+<style>html,body{margin:0;background:transparent}canvas{display:block}</style>
+<canvas id="c"></canvas>
+<script>
+// my avatar's head for the favicon: the red race helmet with goggles pushed up, the yellow rim, and my face in
+// the opening (cropped the same way the 3D head crops it). ?s=size, ?bg=1 for an opaque paper background.
+var q = new URLSearchParams(location.search), S = +q.get("s") || 512, c = document.getElementById("c"), x = c.getContext("2d");
+c.width = c.height = S; c.style.width = c.style.height = S + "px";
+x.scale(S / 512, S / 512);
+var INK = "#2b2340";
+function rnd(i) { var v = Math.sin(i * 127.1) * 43758.5453; return v - Math.floor(v); }
+function scribble(cx, cy, rx, ry, color, alpha, n, seed) {
+  x.save(); x.beginPath(); x.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); x.clip();
+  x.strokeStyle = color; x.globalAlpha = alpha; x.lineWidth = 5; x.lineCap = "round";
+  for (var i = 0; i < n; i++) { var y = cy - ry + (i / n) * ry * 2, w = rnd(seed + i) * 18; x.beginPath(); x.moveTo(cx - rx, y + w); x.lineTo(cx + rx, y - 26 + w); x.stroke(); }
+  x.restore();
+}
+var face = new Image();
+face.onload = function () {
+  if (q.get("bg")) { x.fillStyle = "#fbf5e6"; x.fillRect(0, 0, 512, 512); }
+  // shell
+  x.lineWidth = 22; x.strokeStyle = INK; x.fillStyle = "#e8412c";
+  x.beginPath(); x.ellipse(256, 286, 218, 214, 0, 0, Math.PI * 2); x.fill();
+  x.save(); x.beginPath(); x.ellipse(256, 286, 210, 206, 0, 0, Math.PI * 2); x.clip();
+  scribble(256, 286, 218, 214, "#ff6b52", 0.35, 26, 3);
+  scribble(306, 340, 170, 160, "#8f1d10", 0.28, 18, 9);
+  x.restore();
+  x.beginPath(); x.ellipse(256, 286, 218, 214, 0, 0, Math.PI * 2); x.stroke();
+  // goggles pushed up on top
+  x.fillStyle = INK; x.beginPath(); x.ellipse(256, 98, 150, 26, 0, 0, Math.PI * 2); x.fill();
+  [[178, 92], [334, 92]].forEach(function (g, i) {
+    x.fillStyle = "#7fd3ff"; x.beginPath(); x.ellipse(g[0], g[1], 66, 48, 0, 0, Math.PI * 2); x.fill();
+    scribble(g[0], g[1], 66, 48, "#2f7de1", 0.45, 10, 20 + i * 7);
+    x.lineWidth = 14; x.strokeStyle = INK; x.beginPath(); x.ellipse(g[0], g[1], 66, 48, 0, 0, Math.PI * 2); x.stroke();
+    x.fillStyle = "rgba(255,255,255,0.75)"; x.beginPath(); x.ellipse(g[0] - 22, g[1] - 14, 16, 9, -0.4, 0, Math.PI * 2); x.fill();
+  });
+  // my face in the opening
+  var fx = 256, fy = 312, rx = 136, ry = 158;
+  x.save(); x.beginPath(); x.ellipse(fx, fy, rx, ry, 0, 0, Math.PI * 2); x.clip();
+  var W = face.width, H = face.height;
+  x.drawImage(face, (0.51 - 0.3) * W, (1 - 0.80) * H, 0.6 * W, 0.76 * H, fx - rx, fy - ry, rx * 2, ry * 2);
+  x.restore();
+  // the yellow rim, inked both sides
+  x.lineWidth = 40; x.strokeStyle = INK; x.beginPath(); x.ellipse(fx, fy, rx + 6, ry + 6, 0, 0, Math.PI * 2); x.stroke();
+  x.lineWidth = 26; x.strokeStyle = "#ffc93c"; x.beginPath(); x.ellipse(fx, fy, rx + 6, ry + 6, 0, 0, Math.PI * 2); x.stroke();
+  document.title = "done";
+};
+face.src = "../../public/crayon/face.png";
+</script>

@@ -6,7 +6,7 @@
 //     --act "0.3:click #start" [--url http://localhost:3000/] [--size 1280x800] [--phone] [--from 4] [--every 1] [--png]
 //
 // Actions are "<seconds>:<kind> <arg>": click <selector> | key <Key> | mouse <x> <y> | tap <x> <y> | js <code>
-// | down <x> <y> | move <x> <y> | up <x> <y> (a held-button drag).
+// | down <x> <y> | move <x> <y> | up <x> <y> (a held-button drag) | touchdown / touchmove / touchup <x> <y>.
 // Seconds count from when the clock starts (about 2.5s after the page loads).
 import { spawn } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
@@ -69,6 +69,10 @@ async function act(a) {
     const [x, y] = a.arg.split(/\s+/).map(Number);
     const type = { down: "mousePressed", move: "mouseMoved", up: "mouseReleased" }[a.kind];
     await send("Input.dispatchMouseEvent", { type, x, y, button: "left", buttons: a.kind === "up" ? 0 : 1, clickCount: 1 });
+  } else if (a.kind === "touchdown" || a.kind === "touchmove" || a.kind === "touchup") {
+    const [x, y] = a.arg.split(/\s+/).map(Number);
+    const type = { touchdown: "touchStart", touchmove: "touchMove", touchup: "touchEnd" }[a.kind];
+    await send("Input.dispatchTouchEvent", { type, touchPoints: a.kind === "touchup" ? [] : [{ x, y }] });
   } else if (a.kind === "mouse" || a.kind === "tap") {
     const [x, y] = a.arg.split(/\s+/).map(Number);
     await send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });

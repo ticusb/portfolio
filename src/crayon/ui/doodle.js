@@ -43,13 +43,40 @@ export function createDoodle(byId, listen, hint) {
       look.tx = (e.clientX / window.innerWidth - 0.5) * 2;
       look.ty = (e.clientY / window.innerHeight - 0.5) * 2;
       if (Math.abs(look.tx) > 0.2) hint.style.opacity = "0";
-    } else if (lastPt) {
-      look.tx = Math.max(-1, Math.min(1, look.tx + (e.clientX - lastPt.x) / window.innerWidth * 2));
-      lastPt = { x: e.clientX, y: e.clientY };
+    } else if (touch && !tilt) {
+      // touch, no tilt: dragging pans your view; drag far enough toward an edge and the sim shows there
+      look.tx = Math.max(-1, Math.min(1, (e.clientX - touch.x) / (window.innerWidth * 0.45)));
+      look.ty = Math.max(-1, Math.min(1, (e.clientY - touch.y) / (window.innerHeight * 0.45)));
     }
   });
-  listen(window, "pointerdown", function (e) { if (e.pointerType !== "mouse") lastPt = { x: e.clientX, y: e.clientY }; });
-  listen(window, "pointerup", function (e) { if (e.pointerType !== "mouse") lastPt = null; });
+  var touch = null;
+  listen(window, "pointerdown", function (e) { if (e.pointerType !== "mouse") touch = { x: e.clientX, y: e.clientY }; });
+  function lift(e) { if (e.pointerType === "mouse") return; touch = null; if (!tilt) { look.tx = 0; look.ty = 0; } } // let go: it eases back
+  listen(window, "pointerup", lift); listen(window, "pointercancel", lift);
+
+  // tilt: on a phone, tipping it toward an edge is "looking" there. The neutral position slowly follows however
+  // you're holding it, so only a deliberate tilt reaches the edge of the sim. iOS asks permission, so this is
+  // switched on from the tap that starts the drawing.
+  var tilt = null;
+  function onOrient(e) {
+    if (e.beta == null || e.gamma == null) return;
+    var ang = (window.screen && window.screen.orientation && window.screen.orientation.angle) || window.orientation || 0;
+    var x = e.gamma, y = e.beta;
+    if (ang === 90) { x = e.beta; y = -e.gamma; } else if (ang === -90 || ang === 270) { x = -e.beta; y = e.gamma; }
+    if (!tilt) tilt = { x0: x, y0: y };
+    tilt.x0 += (x - tilt.x0) * 0.004; tilt.y0 += (y - tilt.y0) * 0.004;
+    look.tx = Math.max(-1, Math.min(1, (x - tilt.x0) / 22));
+    look.ty = Math.max(-1, Math.min(1, (y - tilt.y0) / 22));
+  }
+  var tiltAsked = false;
+  function enableTilt() {
+    var D = window.DeviceOrientationEvent;
+    if (tiltAsked || !D || !(window.matchMedia && window.matchMedia("(pointer: coarse)").matches)) return;
+    tiltAsked = true;
+    var on = function () { listen(window, "deviceorientation", onOrient); };
+    if (typeof D.requestPermission === "function") D.requestPermission().then(function (st) { if (st === "granted") on(); }).catch(function () { /* declined: drag still works */ });
+    else on();
+  }
 
   // doodles fade slowly; once nothing has been drawn for a while, stop paying for a full-screen fade every frame
   var lastInk = 0;
@@ -63,5 +90,5 @@ export function createDoodle(byId, listen, hint) {
     dx.fillRect(0, 0, dc.width, dc.height);
     dx.restore();
   }
-  return { dc: dc, dx: dx, look: look, fadeDoodles: fadeDoodles, setCanDraw: function (fn) { canDraw = fn; } };
+  return { dc: dc, dx: dx, look: look, fadeDoodles: fadeDoodles, enableTilt: enableTilt, setCanDraw: function (fn) { canDraw = fn; } };
 }

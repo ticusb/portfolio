@@ -44,7 +44,7 @@ export const EDGE = [
   "  vec3 g = vec3(0.22, 1.0, 0.53) * (0.22 + 0.78 * trail * trail);",
   "  return mix(vec3(0.015, 0.04, 0.025), g, glyph);",
   "}",
-  "uniform vec2 uCursor; uniform vec3 uHit;",
+  "uniform vec2 uCursor;",
   "float dissolve(vec2 p){",
   "  float b = hash(floor(p / 7.0));",
   "  vec2 q = p / uRes;",
@@ -53,9 +53,7 @@ export const EDGE = [
   "  float dye = uCursor.y > 0.0 ? 1.0 - q.y : q.y;",
   "  float ex = ax * clamp(1.0 - dxe / (0.11 * ax + 1e-4), 0.0, 1.0);",
   "  float ey = ay * clamp(1.0 - dye / (0.09 * ay + 1e-4), 0.0, 1.0);",
-  // something that hits the edge of the sim (the comet) tears a ragged hole of code where it went out: uHit = px, amount
-  "  float hole = step(length(p - uHit.xy), uHit.z * 150.0 * (0.7 + b * 0.6));",
-  "  return max(step(b * 0.92 + 0.06, max(ex, ey)), hole);",
+  "  return step(b * 0.92 + 0.06, max(ex, ey));",
   "}"
 ].join("\n");
 

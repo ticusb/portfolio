@@ -70,7 +70,6 @@ export function createSpace(kit) {
       var tc = [["#ffe27a", "#e0a800"], ["#ffc93c", "#ff8c1a"], ["#ffb070", "#e8412c"], ["#f7a1c4", "#c2185b"], ["#c8a8ff", "#7a4fc9"], ["#9db8ff", "#2f7de1"]];
       for (var ti = 1; ti <= 6; ti++) put(crayon(sphere, tc[ti - 1][0], tc[ti - 1][1], { noLine: true, lump: 0.25, order: 30 }), sh, [tailDir.x * ti * 0.42, tailDir.y * ti * 0.42, 0], 0.3 - ti * 0.04);
       kit.bake(sh); s.shoot = put(sh, w, [14, 8, -14]);
-      s.comet = s.shoot;
       s.focus = new THREE.Vector3(2, 0.8, -3);
       s.homeCam = { pos: [2, 1.8, 11.5], look: [2, 1.9, -3], fov: 42 };
       // projects: a patch of sky with one constellation per project
@@ -146,22 +145,22 @@ export function createSpace(kit) {
       // nav orbits once home
       s.anchors.forEach(function (n, i) {
         var a = t * 0.22 + i * Math.PI * 2 / 3, sx = Math.min(1, (info.aspect || 1.6) * 0.8);
-        if ((info.aspect || 1.6) < 1) {
-          // a phone is too narrow to orbit without passing in front of me: they hang in spots around me instead
-          var spot = [[-2.4, -1.7], [2.7, 1.1], [-2.6, 3.7]][i];
-          n.obj.position.set(2 + spot[0] + Math.sin(t * 0.5 + i) * 0.15, 0.9 + spot[1] + Math.sin(t * 0.9 + i) * 0.2, -3);
-        } else n.obj.position.set(2 + Math.cos(a) * 5.4 * sx, 0.9 + Math.sin(a) * 2.0 + Math.sin(t * 0.9 + i) * 0.2, -3 + Math.sin(a) * 2.6);
+        // a tilted orbit: in front of me they pass over my head, behind me under my feet, so they never cover me.
+        // a phone is narrow, so the orbit is narrower there (but never tighter than my shoulders and their labels)
+        var rx = (info.aspect || 1.6) < 1 ? 3.3 : 5.4 * Math.max(0.7, sx);
+        n.obj.position.set(2 + Math.cos(a) * rx, 0.9 + Math.sin(a) * 2.7 + Math.sin(t * 0.9 + i) * 0.2, -3 + Math.sin(a) * 2.6);
         n.obj.rotation.y = t * 0.6 + i;
         n.obj.scale.setScalar(Math.max(0.001, home));
         n.obj.visible = home > 0.001;
         n.obj.userData.vis = home;
+        n.obj.userData.below = Math.sin(a) < -0.2; // on the under-my-feet side, hang the label below so it stays clear of me
       });
       s.planet.rotation.y = t * 0.15;
       s.moon.position.y = 5 + Math.sin(t * 0.4) * 0.3;
-      // the comet streaks across every 7s and flies straight off the edge of the sim (the engine tears the hole)
-      var st = (t % 7) / 3.2;
+      // the comet streaks across every 7s, starting and ending well outside the frame on any screen shape
+      var st = (t % 7) / 3.4;
       s.shoot.visible = st <= 1;
-      s.shoot.position.set(16 - st * 40, 8.5 - st * 7.5, -14);
+      s.shoot.position.set(30 - st * 64, 11 - st * 9, -14);
       s.stars.forEach(function (sr, i) { if (i % 5 === 0) sr.visible = Math.sin(t * 2 + i) > -0.6; });
       s.focus.set(me.group.position.x, me.group.position.y + 1.0, -3);
       s.void.update(t, info.sbKey === "monologue" && info.sb > 0);

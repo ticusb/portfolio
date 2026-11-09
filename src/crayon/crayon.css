@@ -191,4 +191,6 @@ html.crayon-lock, html.crayon-lock body { overflow: hidden; height: 100%; }
 .crayon-root.in-void #doodle { touch-action: none; }
 /* the gate: you can drag me around, so a swipe there isn't a scroll */
 .crayon-root .gate { touch-action: none; }
+/* a nav label can hang under its object instead of over it (space: the side of the orbit under my feet) */
+.crayon-root .worldnav a.below { transform: translate(-50%, 45%); }
 
