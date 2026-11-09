@@ -444,7 +444,8 @@ export function mountCrayonWorld(root, opts) {
     var skipEl = byId("skip");
     try { skipEl.hidden = !localStorage.getItem("crayonSeen"); } catch (e) { skipEl.hidden = true; }
     listen(skipEl, "click", function () { if (!reduce) doodle.enableTilt(); startIntro(true); });
-    listen(replayEl, "click", function () { loadScene(currentName); });
+    // not mid-travel: the trip would land on the other world a second later, on top of the replay
+    listen(replayEl, "click", function () { if (!traveling) loadScene(currentName); });
     // the theme picks the world: light = ski run, dark = space. The button overrides and is remembered.
     var flip = byId("flip");
     var currentName = null;
