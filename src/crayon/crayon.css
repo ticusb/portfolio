@@ -202,6 +202,8 @@ html.crayon-lock, html.crayon-lock body { overflow: hidden; height: 100%; }
 @media (prefers-reduced-motion: reduce) { .crayon-root, .crayon-root::before, .crayon-root .paper-grain { transition: none; } }
 /* in the void you drag me around: don't let the browser treat it as a scroll */
 .crayon-root.in-void #doodle { touch-action: none; }
+/* home on a phone: a finger drags to look around (or draws, once tilt is on), so a swipe isn't a browser gesture */
+@media (pointer: coarse) { .crayon-root.home #doodle { touch-action: none; } }
 /* the gate: you can drag me around, so a swipe there isn't a scroll */
 .crayon-root .gate { touch-action: none; }
 /* touch: the small labels keep their look but get a 44px tall finger target (an invisible halo around them) */

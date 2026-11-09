@@ -16,13 +16,16 @@ export function createDoodle(byId, listen, hint) {
     dx.globalAlpha = 1;
   }
   var canDraw = function () { return false; };
+  // a mouse always draws; a finger draws once tilt is steering the camera (otherwise a drag is how you look around)
+  var drawId = null;
   listen(dc, "pointerdown", function (e) {
-    if (e.pointerType !== "mouse" || !canDraw()) return;
-    drawing = true; inkIdx = (inkIdx + 1) % inks.length; lastPt = { x: e.clientX, y: e.clientY }; waxDab(e.clientX, e.clientY, inks[inkIdx]);
+    if (!canDraw() || (e.pointerType !== "mouse" && !tilt)) return;
+    drawing = true; drawId = e.pointerId; inkIdx = (inkIdx + 1) % inks.length; lastPt = { x: e.clientX, y: e.clientY }; waxDab(e.clientX, e.clientY, inks[inkIdx]);
   });
-  listen(window, "pointerup", function () { drawing = false; });
+  function stopDrawing() { drawing = false; drawId = null; }
+  listen(window, "pointerup", stopDrawing); listen(window, "pointercancel", stopDrawing);
   listen(dc, "pointermove", function (e) {
-    if (!drawing || e.pointerType !== "mouse") return;
+    if (!drawing || e.pointerId !== drawId) return;
     var ddx = e.clientX - lastPt.x, ddy = e.clientY - lastPt.y, steps = Math.max(1, Math.ceil(Math.hypot(ddx, ddy) / 1.5));
     for (var i = 1; i <= steps; i++) waxDab(lastPt.x + ddx * i / steps, lastPt.y + ddy * i / steps, inks[inkIdx]);
     lastPt = { x: e.clientX, y: e.clientY };
