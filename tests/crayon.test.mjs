@@ -2,15 +2,19 @@
 // These guard the seams between them, and between the in-world nav and the app's routes.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
 const engine = read("src/crayon/engine.js");
+// the engine is split into modules; every one of them may look elements up by id
+const crayonFiles = readdirSync(new URL("../src/crayon/", import.meta.url), { recursive: true })
+    .filter((f) => f.endsWith(".js") && f !== "markup.js");
+const allCode = crayonFiles.map((f) => read(`src/crayon/${f}`)).join("\n");
 const markup = read("src/crayon/markup.js");
 const app = read("src/App.js");
 
 test("every element the engine looks up exists in the markup", () => {
-    const ids = [...engine.matchAll(/byId\("([\w-]+)"\)/g)].map((m) => m[1]);
+    const ids = [...allCode.matchAll(/byId\("([\w-]+)"\)/g)].map((m) => m[1]);
     assert.ok(ids.length > 10, "expected the engine to look up its elements by id");
     for (const id of new Set(ids)) {
         assert.ok(markup.includes(`id=\\"${id}\\"`), `markup is missing #${id}`);
