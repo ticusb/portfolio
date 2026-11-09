@@ -18,9 +18,9 @@ export function createKit(shared, coarse) {
       vertexShader: fillVert, fragmentShader: fillFrag, side: opts.side || THREE.FrontSide, transparent: opts.alpha != null, depthWrite: opts.alpha == null,
       uniforms: {
         uColor: { value: new THREE.Color(color) }, uShade: { value: new THREE.Color(shade) },
-        uTime: shared.uTime, uDpr: shared.uDpr, uRes: shared.uRes, uReveal: shared.uReveal, uGlitch: shared.uGlitch, uWorldInv: shared.uWorldInv, uHomeDir: shared.uHomeDir, uHalfFov: shared.uHalfFov, uVig: shared.uVig, uCursor: shared.uCursor, uBite: shared.uBite,
+        uTime: shared.uTime, uDpr: shared.uDpr, uRes: shared.uRes, uReveal: shared.uReveal, uCursor: shared.uCursor,
         uAngle: { value: Math.random() * Math.PI }, uSeed: { value: seed }, uDelay: { value: delay },
-        uLump: { value: lump }, uOver: { value: opts.over != null ? opts.over : 0.06 }, uWash: { value: opts.wash ? 1 : 0 }, uAlpha: { value: opts.alpha != null ? opts.alpha : 1 }, uCut: { value: new THREE.Vector3(opts.cut ? opts.cut[0] : 1, opts.cut ? opts.cut[1] : 1, opts.cut ? 1 : 0) }, uDome: { value: (opts.side === THREE.BackSide || opts.viewEdge) ? 1 : 0 },
+        uLump: { value: lump }, uOver: { value: opts.over != null ? opts.over : 0.06 }, uWash: { value: opts.wash ? 1 : 0 }, uAlpha: { value: opts.alpha != null ? opts.alpha : 1 }, uCut: { value: new THREE.Vector3(opts.cut ? opts.cut[0] : 1, opts.cut ? opts.cut[1] : 1, opts.cut ? 1 : 0) },
         uShift: { value: new THREE.Vector2(jitter(8), jitter(6)) }
       }
     })));
@@ -31,9 +31,9 @@ export function createKit(shared, coarse) {
       g.add(new THREE.Mesh(geom, new THREE.ShaderMaterial({
         vertexShader: lineVert, fragmentShader: lineFrag, side: THREE.BackSide,
         uniforms: {
-          uInk: { value: ink }, uTime: shared.uTime, uDpr: shared.uDpr, uRes: shared.uRes, uReveal: shared.uReveal, uGlitch: shared.uGlitch, uWorldInv: shared.uWorldInv, uHomeDir: shared.uHomeDir, uHalfFov: shared.uHalfFov, uVig: shared.uVig, uCursor: shared.uCursor, uBite: shared.uBite,
+          uInk: { value: ink }, uTime: shared.uTime, uDpr: shared.uDpr, uRes: shared.uRes, uReveal: shared.uReveal, uCursor: shared.uCursor,
           uSeed: { value: seed }, uDelay: { value: Math.min(1, delay + pass * 0.06) },
-          uLump: { value: lump }, uThick: { value: (opts.thick || 0.07) * (pass ? 0.7 : 1) }, uDome: { value: 0 },
+          uLump: { value: lump }, uThick: { value: (opts.thick || 0.07) * (pass ? 0.7 : 1) },
           uShift: { value: new THREE.Vector2(jitter(4), jitter(4)) }
         }
       })));

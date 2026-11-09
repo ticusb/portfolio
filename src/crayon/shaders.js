@@ -2,7 +2,7 @@
  * The crayon look, in GLSL. Every mesh is drawn twice: a scribbled fill (fillVert/fillFrag) and one or two
  * inflated back-face shells for the wobbly ink outline (lineVert/lineFrag). The avatar's head uses the face
  * shader, which projects the selfie flat into the helmet's opening. EDGE holds the "edge of the simulation":
- * near the screen edge the cursor pushes toward, fills turn into falling 1s and 0s.
+ * near the screen edge the cursor pushes toward (uCursor), fills turn into falling 1s and 0s.
  */
 export const COMMON = [
   "float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}",
@@ -13,17 +13,7 @@ export const COMMON = [
 ].join("\n");
 
 export const EDGE = [
-  "uniform mat4 uWorldInv; uniform float uDome; uniform vec3 uHomeDir; uniform vec2 uHalfFov; uniform vec2 uRes;",
-  "float edgeAmt(vec3 wp){",
-  "  vec3 d = (uWorldInv * vec4(wp, 1.0)).xyz;",
-  "  {",
-  "    vec3 ray = normalize(wp - cameraPosition);",
-  "    float yaw = acos(clamp(dot(normalize(ray.xz), normalize(uHomeDir.xz)), -1.0, 1.0));",
-  "    float pitch = abs(asin(clamp(ray.y, -1.0, 1.0)) - asin(clamp(uHomeDir.y, -1.0, 1.0)));",
-  "    return max(smoothstep(uHalfFov.x * 1.0, uHalfFov.x * 1.18, yaw), smoothstep(uHalfFov.y * 1.0, uHalfFov.y * 1.18, pitch));",
-  "  }",
-  "  return max(max(smoothstep(24.0, 34.0, abs(d.x)), smoothstep(18.0, 28.0, d.z)), smoothstep(110.0, 150.0, -d.z));",
-  "}",
+  "uniform vec2 uRes;",
   "vec3 codeWall(vec2 p, float time){",
   "  float cell = 13.0;",
   "  float colId = floor(p.x / cell);",
@@ -40,18 +30,16 @@ export const EDGE = [
   "  vec3 g = vec3(0.22, 1.0, 0.53) * (0.22 + 0.78 * trail * trail);",
   "  return mix(vec3(0.015, 0.04, 0.025), g, glyph);",
   "}",
-  "uniform float uVig; uniform vec2 uCursor; uniform float uBite;",
-  "float dissolve(vec3 wp, vec2 p){",
-  "  float b = hash(floor(p / 7.0) + floor(uTime * 2.0) * 0.0);",
+  "uniform vec2 uCursor;",
+  "float dissolve(vec2 p){",
+  "  float b = hash(floor(p / 7.0));",
   "  vec2 q = p / uRes;",
   "  float ax = abs(uCursor.x), ay = abs(uCursor.y);",
   "  float dxe = uCursor.x > 0.0 ? 1.0 - q.x : q.x;",
   "  float dye = uCursor.y > 0.0 ? 1.0 - q.y : q.y;",
   "  float ex = ax * clamp(1.0 - dxe / (0.11 * ax + 1e-4), 0.0, 1.0);",
   "  float ey = ay * clamp(1.0 - dye / (0.09 * ay + 1e-4), 0.0, 1.0);",
-  "  vec2 o = p / uRes - 0.5; o.x *= (uRes.x / uRes.y) * 0.72;",
-  "  float oval = step(mix(1.9, -0.35, uVig) + b * 0.2, length(o) * 2.0);",
-  "  return max(step(b * 0.92 + 0.06, max(ex, ey)), oval);",
+  "  return step(b * 0.92 + 0.06, max(ex, ey));",
   "}"
 ].join("\n");
 
@@ -63,8 +51,8 @@ export const LUMP = [
   "  float b = n3(pos*2.6 + uSeed + boil*0.71) - 0.5;",
   "  return pos + nrm*(l*uLump + b*uLump*0.05);",
   "}",
-  "uniform float uGlitch;",
-  "vec4 misregister(vec4 clip){ clip.xy += uShift / uRes * 2.0 * clip.w; float band = floor((clip.y/clip.w)*14.0); float tr = hash(vec2(band, floor(uTime*10.0))); clip.x += step(1.0-uGlitch*0.6, tr)*(tr-0.5)*uGlitch*0.5*clip.w; return clip; }"
+  // each mesh is nudged a few pixels off its outline, like a print that is slightly out of register
+  "vec4 misregister(vec4 clip){ clip.xy += uShift / uRes * 2.0 * clip.w; return clip; }"
 ].join("\n");
 
 export const fillVert = [
@@ -83,7 +71,7 @@ export const fillVert = [
 // quieter than v3: denser coverage, finer tooth, softer shading, fewer missed patches
 export const fillFrag = [
   COMMON,
-  "uniform vec3 uColor; uniform vec3 uShade; uniform float uAngle; uniform float uSeed; uniform float uDpr; uniform float uReveal; uniform float uDelay; uniform float uGlitch; uniform float uTime; uniform float uWash; uniform float uAlpha; uniform vec3 uCut;",
+  "uniform vec3 uColor; uniform vec3 uShade; uniform float uAngle; uniform float uSeed; uniform float uDpr; uniform float uReveal; uniform float uDelay; uniform float uTime; uniform float uWash; uniform float uAlpha; uniform vec3 uCut;",
   "varying vec3 vN; varying vec3 vObj; varying vec3 vWorld;",
   EDGE,
   "void main(){",
@@ -94,15 +82,7 @@ export const fillFrag = [
   "  float sweep = dot(normalize(vObj + 1e-4), dir)*0.5 + 0.5;",
   "  if (uDelay*0.6 + sweep*0.28 + noise(p*0.05)*0.08 + 0.3 > uReveal*1.6) discard;",
   "  if (uCut.z > 0.5) { vec3 oc = normalize(vObj); if (oc.z > 0.0 && length(vec2(oc.x / uCut.x, (oc.y + 0.05) / uCut.y)) < 1.0) discard; }",
-  "  if (uGlitch > 0.0) {",
-  "    float band = step(1.0 - uGlitch, hash(vec2(floor(gl_FragCoord.y/(5.0*uDpr)), floor(uTime*12.0))));",
-  "    if (band > 0.5) {",
-  "      vec3 gq = abs(fract(vObj*5.0) - 0.5);",
-  "      if (max(max(gq.x, gq.y), gq.z) < 0.46) discard;",
-  "      gl_FragColor = vec4(0.22, 1.0, 0.53, 1.0); return;",
-  "    }",
-  "  }",
-  "  if (dissolve(vWorld, p) > 0.5) { gl_FragColor = vec4(codeWall(p, uTime), 1.0); return; }",
+  "  if (dissolve(p) > 0.5) { gl_FragColor = vec4(codeWall(p, uTime), 1.0); return; }",
   "  if (uWash > 0.5) { float tw = noise(p*0.9)*0.5 + noise(p*0.31)*0.5; gl_FragColor = vec4(uColor * (0.965 + 0.05*tw) * (1.0 - 0.025*step(0.72, noise(p*0.01 + uSeed))), 1.0); return; }",
   "  float rn = noise(p*0.004 + uSeed);",
   "  vec2 q = rot(uAngle + (rn-0.5)*0.25) * p;",
@@ -143,13 +123,12 @@ export const lineVert = [
 
 export const lineFrag = [
   COMMON,
-  "uniform vec3 uInk; uniform float uDpr; uniform float uReveal; uniform float uDelay; uniform float uSeed; uniform float uGlitch; uniform float uTime;",
+  "uniform vec3 uInk; uniform float uDpr; uniform float uReveal; uniform float uDelay; uniform float uSeed; uniform float uTime;",
   "varying float vAng; varying vec3 vWorld;",
   EDGE,
   "void main(){",
   "  if (uDelay*0.55 + vAng*0.25 > uReveal*1.6) discard;",
-  "  if (dissolve(vWorld, gl_FragCoord.xy / uDpr) > 0.5) discard;",
-  "  if (uGlitch > 0.0 && step(1.0 - uGlitch, hash(vec2(floor(gl_FragCoord.y/(5.0*uDpr)), floor(uTime*12.0)))) > 0.5) discard;",
+  "  if (dissolve(gl_FragCoord.xy / uDpr) > 0.5) discard;",
   "  vec2 p = gl_FragCoord.xy / uDpr;",
   "  if (noise(vec2(vAng*16.0, uSeed)) < 0.18) discard;",
   "  if (noise(p*1.4) < 0.2) discard;",
@@ -169,7 +148,7 @@ export const faceFrag = [
   "void main(){",
   "  vec2 p = gl_FragCoord.xy / uDpr;",
   "  if (uDelay*0.6 + 0.3 + noise(p*0.05)*0.1 > uReveal*1.6) discard;",
-  "  if (dissolve(vWorld, p) > 0.5) { gl_FragColor = vec4(codeWall(p, uTime), 1.0); return; }",
+  "  if (dissolve(p) > 0.5) { gl_FragColor = vec4(codeWall(p, uTime), 1.0); return; }",
   "  vec3 o = normalize(vObj);",
   "  vec2 uv = vec2(0.51 + o.x * 0.3, 0.42 + o.y * 0.38);",
   "  float m = smoothstep(0.95, 0.82, length(vec2(o.x / 0.8, (o.y + 0.05) / 0.92))) * smoothstep(0.0, 0.2, o.z);",

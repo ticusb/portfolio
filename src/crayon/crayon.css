@@ -31,25 +31,12 @@
 .crayon-root * { box-sizing: border-box; }
 .crayon-root { position: fixed; inset: 0; z-index: 1; background: var(--paper); color: var(--ink); font-family: var(--hand); overflow: hidden; }
 html.crayon-lock, html.crayon-lock body { overflow: hidden; height: 100%; }
-.crayon-root .matrix {
-  pointer-events: none; opacity: var(--g, 0); background-color: #020805;
-  background-image: repeating-linear-gradient(0deg, rgba(57,255,136,0.18) 0 1px, transparent 1px 32px), repeating-linear-gradient(90deg, rgba(57,255,136,0.18) 0 1px, transparent 1px 32px);
-}
-.crayon-root .glitch-msg {
-  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0;
-  width: min(90vw, 640px); text-align: center; pointer-events: none;
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: clamp(17px, 2.6vw, 26px); line-height: 1.5;
-  color: #39ff88; text-shadow: 0 0 12px rgba(57,255,136,0.6);
-  opacity: calc((var(--g, 0) - 0.55) * 2.2);
-}
-.crayon-root .notes, .crayon-root #hint { opacity: calc(1 - var(--g, 0)); }
 .crayon-root .fixed { position: fixed; inset: 0; }
 .crayon-root #gl { width: 100%; height: 100%; display: block; }
 .crayon-root #doodle { width: 100%; height: 100%; display: block; touch-action: pan-y; }
 .crayon-root.home #doodle { cursor: crosshair; }
 .crayon-root .paper-grain {
   pointer-events: none;
-  opacity: calc(1 - var(--g, 0));
   mix-blend-mode: var(--grain-blend);
   background-image: var(--grain), radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 55%, var(--vignette) 100%);
 }
@@ -66,7 +53,6 @@ html.crayon-lock, html.crayon-lock body { overflow: hidden; height: 100%; }
 .crayon-root #s-hello { left: 4vw; top: 10vh; width: min(88vw, 760px); }
 .crayon-root #s-day { left: 6vw; top: 22vh; width: min(80vw, 560px); }
 .crayon-root #s-night { right: 5vw; bottom: 16vh; width: min(86vw, 720px); }
-.crayon-root #s-end { left: 50%; bottom: 8vh; transform: translateX(-50%); width: min(90vw, 760px); }
 .crayon-root .gate[hidden], .crayon-root .replay[hidden] { display: none !important; }
 .crayon-root .skip { margin-top: 6px; min-height: 44px; padding: 4px 12px; background: none; border: 0; font-family: var(--hand); font-weight: 700; font-size: 20px; color: var(--ink); text-decoration: underline wavy; text-underline-offset: 5px; cursor: pointer; opacity: 0.8; }
 .crayon-root .skip:hover { opacity: 1; color: var(--red); }

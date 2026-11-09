@@ -46,7 +46,6 @@ export function createRig(camera, world, shared) {
       camera.fov = camera.fov + (Math.min(80, sc.fov * aspectFix) - camera.fov) * se;
     }
     camera.lookAt(lookV);
-    shared.uHomeDir.value.copy(lookV).sub(camera.position).normalize();
     var hv = THREE.MathUtils.degToRad(camera.fov / 2);
     shared.uHalfFov.value.set(Math.atan(Math.tan(hv) * camera.aspect), hv);
     // the mouse can only turn your head a little past the frame, so the code shows as a margin

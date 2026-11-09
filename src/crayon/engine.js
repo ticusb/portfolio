@@ -13,7 +13,7 @@
 /* eslint-disable no-redeclare, no-loop-func */
 import * as THREE from "three";
 import projectData from "../data/projects";
-import { clamp01, smooth, jitter } from "./util";
+import { clamp01, smooth } from "./util";
 import { createKit } from "./materials";
 import { createProps } from "./props";
 import { createAvatar } from "./avatar";
@@ -64,25 +64,19 @@ export function mountCrayonWorld(root) {
     wobbleTimer = setInterval(function () { si = (si + 1) % seeds.length; wobble.setAttribute("seed", String(seeds[si])); }, 240);
   }
 
-  /* scroll progress + scrawls */
+  /* intro progress + the scrawled taglines */
   var progress = 0;
   var hint = byId("hint");
   var scrawls = [
     { el: byId("s-hello"), from: -1, to: 0.22 },
     { el: byId("s-day"), from: 0.3, to: 0.62 },
-    { el: byId("s-night"), from: 0.46, to: 0.8 },
-    { el: byId("s-end"), from: 2, to: 3 }
+    { el: byId("s-night"), from: 0.46, to: 0.8 }
   ];
   var ready = false;
-  function onScroll() {
-    if (!ready) return;
-    scrawls.forEach(function (s) { s.el.classList.toggle("on", progress >= s.from && progress < s.to); });
-  }
-  listen(window, "scroll", onScroll, { passive: true });
   function replayScrawls() {
     ready = false;
     scrawls.forEach(function (s) { s.el.classList.remove("on"); });
-    later(function () { ready = true; onScroll(); }, reduce ? 0 : 600);
+    later(function () { ready = true; }, reduce ? 0 : 600);
   }
   replayScrawls();
 
@@ -117,7 +111,7 @@ export function mountCrayonWorld(root) {
 
     var shared = {
       uTime: { value: 0 }, uDpr: { value: dpr }, uRes: { value: new THREE.Vector2(1, 1) },
-      uReveal: { value: reduce ? 1 : 0 }, uGlitch: { value: 0 }, uWorldInv: { value: new THREE.Matrix4() }, uHomeDir: { value: new THREE.Vector3(0, 0, -1) }, uHalfFov: { value: new THREE.Vector2(0.1, 0.07) }, uVig: { value: 0 }, uCursor: { value: new THREE.Vector2(0, 0) }, uBite: { value: 0 }
+      uReveal: { value: reduce ? 1 : 0 }, uHalfFov: { value: new THREE.Vector2(0.1, 0.07) }, uCursor: { value: new THREE.Vector2(0, 0) }
     };
 
     var kit = createKit(shared, coarse);
@@ -320,24 +314,14 @@ export function mountCrayonWorld(root) {
       var c = current.cam;
       var walk = rig.base(c, progress, VIEW_H, now, reduce, look).walk;
       // push the cursor to an edge and a round bite of code opens there: the end of the simulation.
-      // hold it at the very edge and the bite keeps growing until the whole thing breaks and redraws.
       var on = (mode === "gate" || look.ui || section) ? 0 : 1;
       var pxT = Math.sign(look.tx) * smooth(0.55, 1.0, Math.abs(look.tx)) * on;
       var pyT = -Math.sign(look.ty) * smooth(0.6, 1.0, Math.abs(look.ty)) * on;
       edgePush.x += (pxT - edgePush.x) * (reduce ? 1 : 0.08);
       edgePush.y += (pyT - edgePush.y) * (reduce ? 1 : 0.08);
       bite = Math.max(Math.abs(edgePush.x), Math.abs(edgePush.y));
-      var g = 0;
-      shared.uVig.value = 0;
       shared.uCursor.value.set(edgePush.x, edgePush.y);
-      shared.uBite.value = 0;
-      shared.uGlitch.value = g;
-      root.style.setProperty("--g", g.toFixed(3));
-      var shake = g;
-      if (shake > 0 && !reduce && Math.random() < 0.35) world.position.set(jitter(shake * 0.5), jitter(shake * 0.25), 0); else world.position.set(0, 0, 0);
-      canvas.style.filter = shake > 0.05 ? "drop-shadow(" + (3 * shake).toFixed(1) + "px 0 0 rgba(255,0,90,0.7)) drop-shadow(" + (-3 * shake).toFixed(1) + "px 0 0 rgba(0,255,200,0.7))" : "";
       world.updateMatrixWorld();
-      shared.uWorldInv.value.copy(world.matrixWorld).invert();
 
       if (reduce) sectionBlend = section ? 1 : 0;
       else if (section) sectionBlend = blendFrom + (1 - blendFrom) * clamp01((now - sectionAt) / 1500);

@@ -13,7 +13,7 @@ export function createSki(kit) {
       var s = {};
       var GROUND = -6, INK = "#141414";
       put(crayon(sphere, "#d6ebff", "#a9c8f0", { lump: 0, over: 0, noLine: true, wash: true, side: THREE.BackSide, order: 0.5 }), w, [0, 0, 0], 320);
-      put(crayon(plane, "#f7f9fd", "#a9c4ec", { lump: 0.1, over: 0, noLine: true, wash: true, viewEdge: true, order: 0.8 }), w, [0, GROUND, -110], [400, 300, 1], [-Math.PI / 2, 0, 0]);
+      put(crayon(plane, "#f7f9fd", "#a9c4ec", { lump: 0.1, over: 0, noLine: true, wash: true, order: 0.8 }), w, [0, GROUND, -110], [400, 300, 1], [-Math.PI / 2, 0, 0]);
       s.sun = sun(w, 15, 10, -50, 1.6, 1);
       s.clouds = [cloud(w, -14, 8.5, -40, 1.3, 2), cloud(w, 9, 9.5, -46, 1.1, 2)];
       function peak(x, z, H, R, rock, rockShade, order, snowShare) {
