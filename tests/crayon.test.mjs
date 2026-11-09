@@ -40,3 +40,33 @@ test("the engine cleans up after itself", () => {
     assert.match(engine, /renderer\.dispose\(\)/);
     assert.match(engine, /classList\.remove\("crayon-lock"\)/);
 });
+
+test("reloading a scene frees the old build's geometries, not just its materials", () => {
+    // every build makes fresh baked meshes; replay and world switching leaked ~57 geometries each before this
+    const loadScene = engine.slice(engine.indexOf("function loadScene("), engine.indexOf("current = SCENES[name]"));
+    assert.match(loadScene, /disposeWorld\(\)/);
+    assert.match(engine, /function disposeWorld\(\)[\s\S]{0,400}geometry\.dispose\(\)/);
+});
+
+test("nothing can be listened to after unmount", () => {
+    assert.match(engine, /function listen\([^)]*\) \{[^}]*if \(!alive\) return;/);
+});
+
+test("every deep-link route mounts the world with the section the engine opens", () => {
+    // engine.openSection knows these keys; each route has to hand one of them over
+    for (const [path, section] of [["/about", "about"], ["/projects", "projects"], ["/work/:slug", "projects"], ["/monologue", "monologue"]]) {
+        assert.ok(app.includes(`path="${path}" element={<World section="${section}" />}`), `route ${path} should open ${section}`);
+    }
+    assert.match(app, /path="\*" element=\{<NotFound \/>\}/);
+});
+
+test("every published project has a place in both worlds", async () => {
+    const { default: projects } = await import("../src/data/projects.js");
+    const live = projects.filter((p) => !p.draft);
+    // ski: each project gets its own snow sculpture (an unknown slug quietly becomes another igloo)
+    const ski = read("src/crayon/worlds/ski.js");
+    const kinds = ski.match(/var KIND_FOR = \{([^}]*)\}/)[1];
+    for (const p of live) assert.ok(kinds.includes(`"${p.slug}"`), `no snow sculpture for ${p.slug} in ski.js KIND_FOR`);
+    // space: constellations sit in two rows of four
+    assert.ok(live.length <= 8, "more than 8 projects won't fit the constellation grid in space.js");
+});
