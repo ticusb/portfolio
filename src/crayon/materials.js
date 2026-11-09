@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { jitter } from "./util";
-import { fillVert, fillFrag, lineVert, lineFrag } from "./shaders";
+import { fillVert, fillFrag, lineVert, lineFrag, bakedFillVert, bakedFillFrag, bakedLineVert, bakedLineFrag } from "./shaders";
 
 // draw order runs 0..TOTAL; an object's `order` decides when it appears during the draw-in
 export var TOTAL = 34;
@@ -74,5 +74,100 @@ export function createKit(shared, coarse) {
     g.computeVertexNormals();
     return g;
   })();
-  return { crayon: crayon, put: put, geo: { sphere: sphere, sphereLo: sphereLo, halfSphere: halfSphere, cone: cone, cyl: cyl, torus: torus, thinTorus: thinTorus, plane: plane, box: box } };
+  /*
+   * bake(group, exclude): merge every static crayon mesh under `group` into at most three draw calls (fills,
+   * outlines, second outlines), drawn with the baked shaders so they look exactly as before. The group's own
+   * transform stays live, so a baked sculpture can still hop. Leave out anything that animates on its own
+   * (pass those subtrees in `exclude`); washes, cut-outs and see-through things are skipped automatically.
+   */
+  var bakedUniforms = { uTime: shared.uTime, uDpr: shared.uDpr, uRes: shared.uRes, uReveal: shared.uReveal, uCursor: shared.uCursor };
+  var NOBAKE = /[?&]nobake\b/.test(window.location.search); // dailies: compare against the unbaked scene
+  // Bakes are queued and run after the world is built (flushBakes): three gives every new object an id from
+  // Math.random, so baking mid-build would reshuffle every later object's random crayon angle and seed.
+  // liveScale: bake as if the group were at this scale (things built at 0.001 that grow in later), since
+  // outline thickness depends on the object's real size.
+  var pending = [];
+  function bake(group, exclude, liveScale) { pending.push(function () { bakeNow(group, exclude, liveScale); }); }
+  function flushBakes() { var p = pending; pending = []; if (!NOBAKE) p.forEach(function (f) { f(); }); }
+  function bakeNow(group, exclude, liveScale) {
+    exclude = exclude || [];
+    var savedScale = null;
+    if (liveScale != null) { savedScale = group.scale.clone(); group.scale.setScalar(liveScale); }
+    group.updateMatrixWorld(true);
+    var inv = new THREE.Matrix4().copy(group.matrixWorld).invert();
+    var buckets = { fill: [], line: [], line2: [] };
+    group.traverse(function (o) {
+      if (!o.isMesh || !o.material || !o.material.uniforms) return;
+      for (var q = o; q && q !== group; q = q.parent) if (!q.visible || exclude.indexOf(q) >= 0) return;
+      var m = o.material, u = m.uniforms;
+      if (m.vertexShader === fillVert) {
+        if (u.uWash.value || u.uAlpha.value !== 1 || u.uCut.value.z > 0.5 || m.side !== THREE.FrontSide || m.transparent) return;
+        buckets.fill.push(o);
+      } else if (m.vertexShader === lineVert) (o.userData.pass2 ? buckets.line2 : buckets.line).push(o);
+    });
+    ["fill", "line", "line2"].forEach(function (kind) {
+      var list = buckets[kind];
+      if (list.length < 2) return;
+      var mesh = mergeMeshes(list, kind !== "fill", inv);
+      if (kind === "line2") mesh.userData.pass2 = true;
+      group.add(mesh);
+      list.forEach(function (o) { o.parent.remove(o); o.material.dispose(); });
+    });
+    if (savedScale) { group.scale.copy(savedScale); group.updateMatrixWorld(true); }
+  }
+  function mergeMeshes(list, isLine, inv) {
+    var nv = 0, ni = 0;
+    list.forEach(function (o) { nv += o.geometry.attributes.position.count; ni += o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count; });
+    var A = function (n) { return new Float32Array(nv * n); };
+    var pos = A(3), obj = A(3), nrmM = A(3), extra = A(3), colA = A(3), colB = isLine ? null : A(3), prm = A(4), dly = A(1), sh = A(2);
+    var idx = nv > 65535 ? new Uint32Array(ni) : new Uint16Array(ni);
+    var v = new THREE.Vector3(), n = new THREE.Vector3(), sc = new THREE.Vector3(), rel = new THREE.Matrix4(), m3 = new THREE.Matrix3(), nm = new THREE.Matrix3();
+    var vo = 0, io = 0;
+    list.forEach(function (o) {
+      var g = o.geometry, P = g.attributes.position, N = g.attributes.normal, u = o.material.uniforms;
+      rel.multiplyMatrices(inv, o.matrixWorld); m3.setFromMatrix4(rel); nm.getNormalMatrix(rel);
+      sc.setFromMatrixScale(o.matrixWorld);
+      var k = isLine ? u.uThick.value * Math.min(1, (sc.x + sc.y + sc.z) / 3) : 0;
+      var c1 = isLine ? u.uInk.value : u.uColor.value, c2 = isLine ? null : u.uShade.value;
+      var p4 = [u.uSeed.value, u.uLump.value, isLine ? 0 : u.uOver.value, isLine ? 0 : u.uAngle.value];
+      for (var i = 0; i < P.count; i++) {
+        var j = vo + i;
+        v.fromBufferAttribute(P, i); obj.set([v.x, v.y, v.z], j * 3);
+        v.applyMatrix4(rel); pos.set([v.x, v.y, v.z], j * 3);
+        n.fromBufferAttribute(N, i);
+        v.copy(n).applyMatrix3(m3); nrmM.set([v.x, v.y, v.z], j * 3);
+        if (isLine) v.set(n.x * k / sc.x, n.y * k / sc.y, n.z * k / sc.z).applyMatrix3(m3);
+        else v.copy(n).applyMatrix3(nm).normalize();
+        extra.set([v.x, v.y, v.z], j * 3);
+        colA.set([c1.r, c1.g, c1.b], j * 3); if (colB) colB.set([c2.r, c2.g, c2.b], j * 3);
+        prm.set(p4, j * 4); dly[j] = u.uDelay.value; sh.set([u.uShift.value.x, u.uShift.value.y], j * 2);
+      }
+      if (g.index) for (var t = 0; t < g.index.count; t++) idx[io++] = g.index.getX(t) + vo;
+      else for (var t2 = 0; t2 < P.count; t2++) idx[io++] = t2 + vo;
+      vo += P.count;
+    });
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute("aObj", new THREE.BufferAttribute(obj, 3));
+    geo.setAttribute("aNrmM", new THREE.BufferAttribute(nrmM, 3));
+    geo.setAttribute(isLine ? "aNrmLine" : "aNrmW", new THREE.BufferAttribute(extra, 3));
+    geo.setAttribute(isLine ? "aInk" : "aColor", new THREE.BufferAttribute(colA, 3));
+    if (colB) geo.setAttribute("aShade", new THREE.BufferAttribute(colB, 3));
+    geo.setAttribute("aP", new THREE.BufferAttribute(prm, 4));
+    geo.setAttribute("aDelay", new THREE.BufferAttribute(dly, 1));
+    geo.setAttribute("aShift", new THREE.BufferAttribute(sh, 2));
+    geo.setIndex(new THREE.BufferAttribute(idx, 1));
+    geo.computeBoundingSphere();
+    var mat = new THREE.ShaderMaterial({ vertexShader: isLine ? bakedLineVert : bakedFillVert, fragmentShader: isLine ? bakedLineFrag : bakedFillFrag, side: isLine ? THREE.BackSide : THREE.FrontSide, uniforms: bakedUniforms });
+    return new THREE.Mesh(geo, mat);
+  }
+  // bake loose static things that sit directly in the world: gather them in one container first
+  function bakeAll(parent, objs) {
+    pending.push(function () {
+      var box = new THREE.Group(); parent.add(box);
+      objs.forEach(function (o) { box.add(o); });
+      bakeNow(box);
+    });
+  }
+  return { crayon: crayon, put: put, bake: bake, bakeAll: bakeAll, flushBakes: flushBakes, geo: { sphere: sphere, sphereLo: sphereLo, halfSphere: halfSphere, cone: cone, cyl: cyl, torus: torus, thinTorus: thinTorus, plane: plane, box: box } };
 }

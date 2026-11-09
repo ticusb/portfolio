@@ -22,6 +22,7 @@
   }
   // CSS animations are held at their first frame while the page loads, same as JS time
   var hold = rSI(function () { if (!started && document.getAnimations) syncAnims(0); }, 10);
+  window.__fakeClock = true;
   window.__start = function () { started = true; clearInterval(hold); rCI(hold); };
   window.__now = function () { return now; };
   window.__tick = function (dt) {

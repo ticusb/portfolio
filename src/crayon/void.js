@@ -30,6 +30,7 @@ export function buildVoid(kit, w, astro) {
     put(crayon(g.sphere, "#e8eefc", "#7f93c8", { thick: 0.03, lump: 0.1, order: 3 }), bubble, [b[0], b[1], 0.2], b[2]);
   });
   kit.props.cloud(bubble, -0.35, 2.55, 0.2, 0.5, 3);
+  kit.bake(dust); kit.bake(bubble);
   return {
     me: me,
     head: me.head,

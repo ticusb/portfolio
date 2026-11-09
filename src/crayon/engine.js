@@ -147,7 +147,8 @@ export function mountCrayonWorld(root, opts) {
     if (DAILIES.on) {
       // perf probe for tools/dailies/perf.mjs: what the last frame cost the GPU
       window.__gl = function () { var r = renderer.info.render; return { calls: r.calls, triangles: r.triangles, dpr: dpr, programs: renderer.info.programs ? renderer.info.programs.length : 0, geometries: renderer.info.memory.geometries }; };
-      cleanups.push(function () { delete window.__gl; });
+      window.__scene = scene;
+      cleanups.push(function () { delete window.__gl; delete window.__scene; });
       window.__beats = function () { return beatTable ? beatTable.map(function (b) { return { name: b.name, at: introAt / 1000 + b.start }; }) : []; };
       cleanups.push(function () { delete window.__beats; });
     }
@@ -177,6 +178,7 @@ export function mountCrayonWorld(root, opts) {
       while (world.children.length) world.remove(world.children[0]);
       current = SCENES[name];
       state = current.build(world);
+      kit.flushBakes();
       if (thinLines) thinOutlines();
       buildBeats();
       t0 = started ? performance.now() : Infinity;
@@ -410,7 +412,7 @@ export function mountCrayonWorld(root, opts) {
       var now = performance.now();
       var t = (now - loadAt) / 1000;
       var dtMs = Math.min(100, now - lastNow); lastNow = now;
-      if (!document.hidden) adapt(dtMs, now);
+      if (!document.hidden && !window.__fakeClock) adapt(dtMs, now); // a filmed frame always "takes" 33ms; don't let that look slow
       var T = mode === "gate" ? 0 : (now - introAt) / 1000;
       if (mode === "intro") {
         var END = beatTable ? introLen : current.introEnd || INTRO_END;

@@ -94,12 +94,16 @@ export function createSki(kit) {
       put(crayon(plane, "#f7f9fd", "#a9c4ec", { lump: 0.1, over: 0, noLine: true, wash: true, order: 0.8 }), w, [0, GROUND, -110], [400, 300, 1], [-Math.PI / 2, 0, 0]);
       s.sun = sun(w, 15, 10, -50, 1.6, 1);
       s.clouds = [cloud(w, -14, 8.5, -40, 1.3, 2), cloud(w, 9, 9.5, -46, 1.1, 2)];
+      kit.bake(s.sun); s.clouds.forEach(function (c) { kit.bake(c); });
+      // everything that never moves gets baked into a few draw calls at the end of build
+      var statics = [];
+      function st(o) { statics.push(o); return o; }
       function peak(x, z, H, R, rock, rockShade, order, snowShare) {
         var g = new THREE.Group();
         put(crayon(cone, rock, rockShade, { thick: 0.24, lump: 0.05, ink: INK, order: order }), g, [0, H / 2, 0], [R, H, R]);
         var hc = H * (snowShare || 0.28);
         put(crayon(cone, "#ffffff", "#aab8cf", { thick: 0.16, lump: 0.06, ink: INK, order: order + 0.5 }), g, [0, H - hc / 2 + 0.05, 0], [R * hc / H * 1.08, hc, R * hc / H * 1.08]);
-        return put(g, w, [x, GROUND, z]);
+        return st(put(g, w, [x, GROUND, z]));
       }
       [[-17, 6.5, 3.6], [-12, 8.5, 4], [-6.5, 7.2, 3.6], [-1.5, 10.5, 4.4], [3.5, 8.8, 3.8], [8.5, 9.6, 4.2], [13, 7.6, 3.8], [17.5, 6, 3.4]].forEach(function (m, i) {
         peak(m[0], -44 - (i % 2) * 3, m[1], m[2], "#b9c2d3", "#6f7a92", 1.5 + i * 0.2, 0.4);
@@ -115,7 +119,7 @@ export function createSki(kit) {
         [[1.6, 1.9, 1.75], [2.6, 1.55, 1.45], [3.5, 1.2, 1.2]].forEach(function (t, k) {
           put(crayon(cone, "#0b8a24", "#05561a", { thick: 0.13, lump: 0.06, ink: INK, order: order + 0.3 }), g, [0, t[0], 0], [t[1], t[2], t[1]]);
         });
-        return put(g, w, [x, GROUND, z], sz, [0, Math.random() * 6, 0]);
+        return st(put(g, w, [x, GROUND, z], sz, [0, Math.random() * 6, 0]));
       }
       [[-13, -7, 1.2], [-10.5, -4.5, 1.05], [-14, -1.5, 1.0], [24, -12, 1.3], [11.2, -1.4, 1.1], [-6.5, 1.8, 0.8], [-16, 3, 0.95], [24.5, -2, 1.0], [10.5, -13, 1.1], [3, -15, 1.2]].forEach(function (t, i) {
         tree(t[0], t[1], t[2], 6 + i * 0.6);
@@ -126,23 +130,23 @@ export function createSki(kit) {
       s.topY = topY; s.BZ = BZ; s.GX = GX; s.GROUND = GROUND;
       function slab(a, b) {
         var cx = (a + b) / 2, cy = BY - Math.tan(TILT) * (cx - BX);
-        put(crayon(box, "#f4f8ff", "#9db8e8", { thick: 0.1, lump: 0.05, ink: INK, order: 17 }), w, [cx, cy, BZ], [(b - a) / 2, 0.45, 2.7], [0, 0, -TILT]);
-        put(crayon(box, "#eef3fb", "#9db8e8", { thick: 0.08, lump: 0.06, ink: INK, order: 17 }), w, [cx, cy - 0.95, BZ - 0.5], [(b - a) / 2 + 0.1, 0.9, 2.9], [0, 0, -TILT]);
+        st(put(crayon(box, "#f4f8ff", "#9db8e8", { thick: 0.1, lump: 0.05, ink: INK, order: 17 }), w, [cx, cy, BZ], [(b - a) / 2, 0.45, 2.7], [0, 0, -TILT]));
+        st(put(crayon(box, "#eef3fb", "#9db8e8", { thick: 0.08, lump: 0.06, ink: INK, order: 17 }), w, [cx, cy - 0.95, BZ - 0.5], [(b - a) / 2 + 0.1, 0.9, 2.9], [0, 0, -TILT]));
       }
       slab(-2.1, GX - 0.95);
       slab(GX + 0.95, 7.6);
       // inside the gap: rock walls, spikes, a lava floor, smoke
       [-1, 1].forEach(function (sd) {
         var wx = GX + sd * 0.92, h = (topY(wx) - GROUND) / 2;
-        put(crayon(box, "#2a1830", "#120a18", { thick: 0.05, lump: 0.15, ink: "#07030a", order: 18 }), w, [wx, GROUND + h, BZ], [0.12, h, 2.7]);
+        st(put(crayon(box, "#2a1830", "#120a18", { thick: 0.05, lump: 0.15, ink: "#07030a", order: 18 }), w, [wx, GROUND + h, BZ], [0.12, h, 2.7]));
       });
-      put(crayon(box, "#ff6a1a", "#ffd23f", { noLine: true, lump: 0.15, order: 18.2 }), w, [GX, GROUND + 0.12, BZ], [0.86, 0.12, 2.65]);
+      st(put(crayon(box, "#ff6a1a", "#ffd23f", { noLine: true, lump: 0.15, order: 18.2 }), w, [GX, GROUND + 0.12, BZ], [0.86, 0.12, 2.65]));
       s.lava = [];
       [-0.45, 0, 0.45].forEach(function (lx, i) {
         s.lava.push(put(crayon(box, i % 2 ? "#ffe066" : "#ff9f1c", "#ff5a1f", { noLine: true, lump: 0.25, order: 18.5 }), w, [GX + lx, GROUND + 0.27, BZ + jitter(0.4)], [0.07, 0.04, 2.3]));
       });
       for (var rk = 0; rk < 7; rk++) {
-        put(crayon(cone, "#3b2147", "#150a1c", { thick: 0.04, lump: 0.2, ink: "#07030a", order: 18.6 }), w, [GX + jitter(0.6), GROUND + 0.5, BZ + jitter(2.3)], [0.16, 0.7 + Math.random() * 0.6, 0.16], [jitter(0.2), 0, jitter(0.25)]);
+        st(put(crayon(cone, "#3b2147", "#150a1c", { thick: 0.04, lump: 0.2, ink: "#07030a", order: 18.6 }), w, [GX + jitter(0.6), GROUND + 0.5, BZ + jitter(2.3)], [0.16, 0.7 + Math.random() * 0.6, 0.16], [jitter(0.2), 0, jitter(0.25)]));
       }
       s.smoke = [];
       for (var si2 = 0; si2 < 12; si2++) s.smoke.push(put(crayon(sphereLo, "#7a6a88", "#3d2f4a", { noLine: true, lump: 0.3, order: 20 }), w, [GX + jitter(0.6), GROUND + Math.random() * 5, BZ + jitter(2.2)], 0.3));
@@ -170,11 +174,12 @@ export function createSki(kit) {
         }
         put(crayon(sphere, "#ff3b6b", "#8f1d3a", { noLine: true, lump: 0.1, order: 23 }), lower, [0, 0.1, 0.65], [0.45, 0.12, 0.4]);
         head.add(upper); head.add(lower); head.position.y = 2.6; pg.add(head);
+        kit.bake(stem); kit.bake(upper); kit.bake(lower);
         pg.userData = { upper: upper, lower: lower, head: head, phase: Math.random() * 6, baseY: GROUND + 0.05 };
         s.plants.push(put(pg, w, [GX + pp[0], GROUND + 0.05, BZ + pp[1]], 0.6 + Math.random() * 0.1));
       });
       // kicker, ring of fire
-      put(crayon(box, "#eef4ff", "#8fa3e6", { thick: 0.06, lump: 0.05, ink: INK, order: 24 }), w, [GX - 1.55, topY(GX - 1.55) + 0.18, BZ], [0.7, 0.2, 1.0], [0, 0, 0.25]);
+      st(put(crayon(box, "#eef4ff", "#8fa3e6", { thick: 0.06, lump: 0.05, ink: INK, order: 24 }), w, [GX - 1.55, topY(GX - 1.55) + 0.18, BZ], [0.7, 0.2, 1.0], [0, 0, 0.25]));
       var ring = new THREE.Group();
       put(crayon(torus, "#4a2c1e", "#1c0f08", { thick: 0.05, lump: 0.03, ink: "#120804", order: 25 }), ring, [0, 0, 0], [1.6, 1.6, 1.1]);
       put(crayon(torus, "#ff7a1a", "#ffd23f", { noLine: true, lump: 0.05, order: 25.5 }), ring, [0, 0, 0], [1.6, 1.6, 0.5]);
@@ -187,6 +192,7 @@ export function createSki(kit) {
         put(crayon(cone, "#ffe066", "#ffb31a", { noLine: true, lump: 0.3, order: 26.6 }), fg, [0, 0.3, 0.04], [0.11, 0.45, 0.11]);
         fg.userData = { base: topf, phase: Math.random() * 6 };
         put(fg, ring, [Math.cos(fa) * 1.6, Math.sin(fa) * 1.6 + 0.05, 0], topf);
+        kit.bake(fg);
         s.flames.push(fg);
       }
       s.embers = [];
@@ -298,9 +304,9 @@ export function createSki(kit) {
         ribbon(p2, n2, 1.3, 26, k2);
       })();
       // fill the seams: snow drifts where the peak meets the shoulder, and where the shoulder meets the valley
-      put(crayon(sphere, "#f4f8ff", "#9db8e8", { thick: 0.08, lump: 0.2, ink: INK, order: 16.5 }), w, [-2.2, GROUND + 0.9, -9.6], [2.6, 1.9, 2.9]);
-      put(crayon(sphere, "#f4f8ff", "#9db8e8", { thick: 0.08, lump: 0.2, ink: INK, order: 16.5 }), w, [7.9, GROUND + 0.1, -8.2], [1.9, 0.8, 2.8]);
-      put(crayon(sphere, "#f4f8ff", "#9db8e8", { thick: 0.08, lump: 0.2, ink: INK, order: 16.5 }), w, [6.4, GROUND + 0.1, -4.9], [1.7, 0.75, 1.2]);
+      st(put(crayon(sphere, "#f4f8ff", "#9db8e8", { thick: 0.08, lump: 0.2, ink: INK, order: 16.5 }), w, [-2.2, GROUND + 0.9, -9.6], [2.6, 1.9, 2.9]));
+      st(put(crayon(sphere, "#f4f8ff", "#9db8e8", { thick: 0.08, lump: 0.2, ink: INK, order: 16.5 }), w, [7.9, GROUND + 0.1, -8.2], [1.9, 0.8, 2.8]));
+      st(put(crayon(sphere, "#f4f8ff", "#9db8e8", { thick: 0.08, lump: 0.2, ink: INK, order: 16.5 }), w, [6.4, GROUND + 0.1, -4.9], [1.7, 0.75, 1.2]));
       s.planted = put(planted, w, [s.S.x + 0.85, GROUND - 0.05, s.S.z - 0.1], 0.001);
       // penguins: the nav, waddling around with little signs
       function penguin(order) {
@@ -328,6 +334,7 @@ export function createSki(kit) {
         var pg = penguin(33);
         put(pg.group, w, [s.S.x + pp[1], GROUND, s.S.z + pp[2]], 0.001);
         pg.ox = pp[1]; pg.oz = pp[2]; pg.cx = s.S.x + pp[1]; pg.cz = s.S.z + pp[2]; pg.r = pp[3]; pg.dir = pp[4]; pg.phase = i * 1.6;
+        kit.bake(pg.group, [pg.fl, pg.fr], 0.9);
         s.penguins.push(pg);
         s.anchors.push({ key: pp[0], obj: pg.tip });
       });
@@ -336,7 +343,7 @@ export function createSki(kit) {
       s.homeCam = { pos: [s.S.x + 0.3, GROUND + 2.6, s.S.z + 8.2], look: [s.S.x - 0.2, GROUND + 1.6, s.S.z - 3], fov: 48 };
       // about: me, chilling on a snow ledge at the summit
       var M = s.main, top = GROUND + M.H;
-      put(crayon(sphere, "#f4f8ff", "#9db8e8", { thick: 0.06, lump: 0.12, ink: INK, order: 4 }), w, [M.x + 0.15, top - 0.78, M.z + 0.45], [0.8, 0.24, 0.7]);
+      st(put(crayon(sphere, "#f4f8ff", "#9db8e8", { thick: 0.06, lump: 0.12, ink: INK, order: 4 }), w, [M.x + 0.15, top - 0.78, M.z + 0.45], [0.8, 0.24, 0.7]));
       var chill = avatar(40, "#e8412c", "#8f1d10");
       chill.legs.forEach(function (lg) { lg.rotation.x = -1.35; });
       chill.body.rotation.x = -0.3;
@@ -401,6 +408,7 @@ export function createSki(kit) {
         var tip = new THREE.Object3D(); tip.position.set(0, h + 0.5, 0); g.add(tip);
         g.userData.slug = proj.slug;
         w.add(g);
+        kit.bake(g);
         s.picks.push({ slug: proj.slug, group: g, tip: tip, pop: 1 });
       });
       // the void inside my head (monologue), and the face you zoom into to get there
@@ -411,6 +419,7 @@ export function createSki(kit) {
         projects: { cam: { pos: [GC.x + 1.4, GROUND + 4.6, GC.z + 10.5], look: [GC.x - 2.6, GROUND + 1.1, GC.z - 0.5], fov: 50 } },
         monologue: {}
       };
+      kit.bakeAll(w, statics);
       return s;
     },
     update: function (s, t, info) {

@@ -18,18 +18,20 @@ export function createSpace(kit) {
         var sd = new THREE.Vector3(jitter(1), jitter(0.8), -0.15 - Math.random()).normalize(), sr = 16 + Math.random() * 34;
         s.stars.push(put(crayon(sphereLo, c[0], c[1], { noLine: true, lump: 0.35, order: 2 + Math.random() * 4 }), w, [sd.x * sr, sd.y * sr, sd.z * sr], 0.1 + sr * 0.007 + Math.random() * 0.12));
       }
+      // every fifth star twinkles; the rest never move, so they're one draw call
+      kit.bakeAll(w, s.stars.filter(function (st, k) { return k % 5 !== 0; }));
       var pl = new THREE.Group();
       put(crayon(sphere, "#ff8a3d", "#b23a48", { thick: 0.06, lump: 0.12, order: 8 }), pl, [0, 0, 0], 2.2);
       put(crayon(torus, "#f27bb0", "#a8306b", { thick: 0.04, lump: 0.05, order: 10 }), pl, [0, 0, 0], [3.4, 3.4, 0.5], [1.25, 0.3, 0]);
-      s.planet = put(pl, w, [11, -1.5, -15]);
+      kit.bake(pl); s.planet = put(pl, w, [11, -1.5, -15]);
       var mo = new THREE.Group();
       put(crayon(sphere, "#d6d8e2", "#7a7d92", { thick: 0.06, lump: 0.15, order: 12 }), mo, [0, 0, 0], 1.3);
       [[0.4, 0.3], [-0.5, -0.2], [0.1, -0.6]].forEach(function (k) { put(crayon(sphere, "#aeb3c2", "#5a5f78", { noLine: true, lump: 0.1, order: 13 }), mo, [k[0], k[1], 1.05], [0.32, 0.32, 0.15]); });
-      s.moon = put(mo, w, [10, 5, -11]);
+      kit.bake(mo); s.moon = put(mo, w, [10, 5, -11]);
       var ea = new THREE.Group();
       put(crayon(sphere, "#2f7de1", "#163f8a", { thick: 0.06, lump: 0.1, order: 15 }), ea, [0, 0, 0], 1.6);
       [[0.5, 0.6], [-0.7, -0.1], [0.3, -0.8]].forEach(function (k) { put(crayon(sphere, "#3aa655", "#1d6b3a", { noLine: true, lump: 0.3, order: 16 }), ea, [k[0], k[1], 1.1], [0.55, 0.4, 0.4]); });
-      s.earth = put(ea, w, [-6, -5.5, -7]);
+      kit.bake(ea); s.earth = put(ea, w, [-6, -5.5, -7]);
       // the UFO (starts far off to the left)
       var u = new THREE.Group();
       put(crayon(sphere, "#c9ccd6", "#6b7090", { thick: 0.08, lump: 0.06, order: 18 }), u, [0, 0, 0], [2.6, 0.55, 2.6]);
@@ -42,14 +44,14 @@ export function createSpace(kit) {
       }
       s.beam = put(crayon(cone, "#fff2a8", "#f2c94c", { noLine: true, lump: 0.1, alpha: 0.32, order: 24 }), u, [0, -3.4, 0], [2.0, 6.0, 2.0]);
       s.beamMat = s.beam.children[0].material;
-      s.ufo = put(u, w, [-40, 4.8, -3]);
+      kit.bake(u, s.lights); s.ufo = put(u, w, [-40, 4.8, -3]);
       // me, floating
       s.me = avatar(26, "#e8412c", "#8f1d10", { astro: true });
       put(s.me.group, w, [2, -0.2, -3], 0.9);
       // nav: little things orbiting me once I'm caught
       s.nav = new THREE.Group(); w.add(s.nav);
       s.anchors = [];
-      function navItem(key, g) { g.scale.setScalar(0.001); s.nav.add(g); s.anchors.push({ key: key, obj: g }); return g; }
+      function navItem(key, g) { kit.bake(g, null, 1); g.scale.setScalar(0.001); s.nav.add(g); s.anchors.push({ key: key, obj: g }); return g; }
       var monoI = new THREE.Group();
       put(crayon(sphere, "#ffffff", "#9aa3b8", { thick: 0.05, lump: 0.12, order: 30 }), monoI, [0, 0, 0], [0.7, 0.5, 0.35]);
       put(crayon(cone, "#ffffff", "#9aa3b8", { thick: 0.04, lump: 0.05, order: 30 }), monoI, [-0.35, -0.45, 0], [0.16, 0.38, 0.12], [0, 0, 0.6]);
@@ -66,7 +68,7 @@ export function createSpace(kit) {
       var tailDir = new THREE.Vector3(0.98, 0.19, 0).normalize();
       var tc = [["#ffe27a", "#e0a800"], ["#ffc93c", "#ff8c1a"], ["#ffb070", "#e8412c"], ["#f7a1c4", "#c2185b"], ["#c8a8ff", "#7a4fc9"], ["#9db8ff", "#2f7de1"]];
       for (var ti = 1; ti <= 6; ti++) put(crayon(sphere, tc[ti - 1][0], tc[ti - 1][1], { noLine: true, lump: 0.25, order: 30 }), sh, [tailDir.x * ti * 0.42, tailDir.y * ti * 0.42, 0], 0.3 - ti * 0.04);
-      s.shoot = put(sh, w, [14, 8, -14]);
+      kit.bake(sh); s.shoot = put(sh, w, [14, 8, -14]);
       s.focus = new THREE.Vector3(2, 0.8, -3);
       s.homeCam = { pos: [2, 1.8, 11.5], look: [2, 1.9, -3], fov: 42 };
       // projects: a patch of sky with one constellation per project

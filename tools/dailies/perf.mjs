@@ -4,6 +4,7 @@
 //   node tools/dailies/perf.mjs [--url http://localhost:8772/] [--world ski] [--phone] [--size 1920x1080]
 //     [--throttle 4] [--intro] [--secs 5]
 // Default: skips to home and measures there. --intro clicks the crayon and measures the run instead.
+// --eval "<js>" evaluates an expression on the page instead of measuring, and prints the result.
 import { spawn } from "node:child_process";
 import { rmSync } from "node:fs";
 import path from "node:path";
@@ -32,6 +33,7 @@ await loaded; await sleep(2000);
 if (Number(opt.throttle) > 1) await send("Emulation.setCPUThrottlingRate", { rate: Number(opt.throttle) });
 await ev(opt.intro ? "document.getElementById('start').click()" : "document.getElementById('skip').click()");
 await sleep(opt.intro ? 300 : 2500);
+if (opt.eval) { console.log(JSON.stringify(await ev(opt.eval), null, 1)); ws.close(); chrome.kill(); await sleep(300); rmSync(prof, { recursive: true, force: true }); process.exit(0); }
 const r = await ev(`new Promise((res) => { const ts = []; const end = performance.now() + ${Number(opt.secs) * 1000};
   (function f(t) { ts.push(t); if (t < end) requestAnimationFrame(f); else { const d = ts.slice(1).map((x, i) => x - ts[i]).sort((a, b) => a - b);
     res({ fps: +(1000 / (d.reduce((a, b) => a + b, 0) / d.length)).toFixed(1), p50: +d[Math.floor(d.length * 0.5)].toFixed(1), p95: +d[Math.floor(d.length * 0.95)].toFixed(1), worst: +d[d.length - 1].toFixed(1), gl: window.__gl && window.__gl() }); } })(performance.now()); })`);
